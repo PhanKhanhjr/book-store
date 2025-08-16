@@ -1,4 +1,4 @@
-package phankhanh.book_store.domain.response;
+package phankhanh.book_store.DTO.response;
 
 public class RestResponse<T> {
     private int statusCode;

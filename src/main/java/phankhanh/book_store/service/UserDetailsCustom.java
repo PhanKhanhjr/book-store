@@ -8,6 +8,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
+import java.util.Optional;
 
 @Component("userDetailsService")
 public class UserDetailsCustom implements UserDetailsService {
@@ -17,7 +18,7 @@ public class UserDetailsCustom implements UserDetailsService {
     }
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        phankhanh.book_store.domain.User user = this.userService.getUserByUsername(username);
+     phankhanh.book_store.domain.User user = this.userService.getUserByUsername(username);
         if(user == null) {
             throw new UsernameNotFoundException("User not found with username: " + username);
         }
@@ -28,3 +29,5 @@ public class UserDetailsCustom implements UserDetailsService {
         );
     }
 }
+
+

@@ -9,7 +9,7 @@ import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpResponse;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
-import phankhanh.book_store.domain.response.RestResponse;
+import phankhanh.book_store.DTO.response.RestResponse;
 import phankhanh.book_store.util.anotation.ApiMessage;
 
 @RestControllerAdvice

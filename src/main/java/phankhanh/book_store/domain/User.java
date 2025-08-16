@@ -2,10 +2,8 @@ package phankhanh.book_store.domain;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
+import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import phankhanh.book_store.util.SecurityUtil;
 import phankhanh.book_store.util.constant.GenderEnum;
 
@@ -15,11 +13,14 @@ import java.time.LocalDate;
 @Entity
 @Table(name = "users")
 @Getter @Setter @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
     private String fullName;
+    private String username;
     @NotBlank(message = "Email cannot be empty")
     private String email;
     @NotBlank(message = "Password cannot be empty")
@@ -39,6 +40,7 @@ public class User {
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     @ToString.Exclude
     private java.util.List<Address> addresses = new java.util.ArrayList<>();
+
 
     // helper methods (tiện thêm/xoá và đồng bộ 2 chiều)
     public void addAddress(Address addr) {

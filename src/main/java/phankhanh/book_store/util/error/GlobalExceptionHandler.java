@@ -11,7 +11,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
-import phankhanh.book_store.domain.response.RestResponse;
+import phankhanh.book_store.DTO.response.RestResponse;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -62,6 +62,15 @@ public class GlobalExceptionHandler {
         RestResponse<Object> res = new RestResponse<>();
         res.setStatusCode(HttpStatus.BAD_REQUEST.value());
         res.setError("Email already exists");
+        res.setMessage(e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(res);
+    }
+
+    @ExceptionHandler(value = UsernameAlreadyExistsException.class)
+    public ResponseEntity<RestResponse<Object>> handleUsernameAlreadyExistsException(UsernameAlreadyExistsException e) {
+        RestResponse<Object> res = new RestResponse<>();
+        res.setStatusCode(HttpStatus.BAD_REQUEST.value());
+        res.setError("Username already exists");
         res.setMessage(e.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(res);
     }
