@@ -7,6 +7,11 @@ public record ReqVerifyEmail(
         @Email @NotBlank(message = "Email cannot be empty")
         String email,
         @NotBlank(message = "Verification code cannot be empty")
-        String otp
+        String otp,
+        @NotBlank(message = "Password cannot be empty")
+        String password,
+        String fullName,
+        String username,
+        String phone
 ) {
 }

@@ -7,10 +7,10 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import phankhanh.book_store.DTO.request.ReqLoginDTO;
 import phankhanh.book_store.DTO.request.ReqRegister;
 import phankhanh.book_store.DTO.request.ReqResendOtp;
 import phankhanh.book_store.DTO.request.ReqVerifyEmail;
-import phankhanh.book_store.DTO.response.LoginDTO;
 import phankhanh.book_store.DTO.response.ResLoginDTO;
 import phankhanh.book_store.service.AuthService;
 import phankhanh.book_store.service.OtpService;
@@ -33,8 +33,8 @@ public class AuthController {
         this.otpService = otpService;
     }
     @PostMapping("/login")
-    public ResponseEntity<ResLoginDTO> longin(@Valid @RequestBody LoginDTO loginDTO) {
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(loginDTO.getUsername(), loginDTO.getPassword());
+    public ResponseEntity<ResLoginDTO> longin(@Valid @RequestBody ReqLoginDTO reqLoginDTO) {
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(reqLoginDTO.getUsername(), reqLoginDTO.getPassword());
         Authentication authentication = authenticationManagerBuilder.getObject().authenticate(authenticationToken);
         SecurityContextHolder.getContext().setAuthentication(authentication);
         //Create token
@@ -62,12 +62,8 @@ public class AuthController {
 }
 
     @PostMapping("/verify-email")
-    public ResponseEntity<?> verify(@Valid @RequestBody ReqVerifyEmail req,
-                                    @RequestParam String password,
-                                    @RequestParam(required = false) String fullName,
-                                    @RequestParam(required = false) String username,
-                                    @RequestParam(required = false) String phoneNumber) {
-        Long id = otpService.verifyRegister(req.email(), req.otp(), password, fullName, username, phoneNumber);
+    public ResponseEntity<?> verify(@Valid @RequestBody ReqVerifyEmail req){
+        Long id = otpService.verifyRegister(req.email(), req.otp(), req.password(), req.fullName(), req.username(), req.phone());
         return ResponseEntity.ok(Map.of("userId", id, "message", "verified"));
     }
 

@@ -2,8 +2,6 @@ package phankhanh.book_store.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.boot.autoconfigure.web.WebProperties;
-
 import java.util.ArrayList;
 import java.util.List;
 

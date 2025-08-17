@@ -10,6 +10,8 @@ import phankhanh.book_store.Repository.UserRepository;
 import phankhanh.book_store.domain.EmailVerification;
 import phankhanh.book_store.domain.User;
 import phankhanh.book_store.util.error.EmailAlreadyExistsException;
+import phankhanh.book_store.util.error.InvalidOtpException;
+import phankhanh.book_store.util.error.UsernameAlreadyExistsException;
 
 import java.security.SecureRandom;
 import java.time.Duration;
@@ -35,9 +37,12 @@ public class OtpService {
     }
 
     @Transactional
-    public void startRegister(String email, String password, String username, String fullName, String phone) throws EmailAlreadyExistsException {
+    public void startRegister(String email, String password, String username, String fullName, String phone) throws EmailAlreadyExistsException, UsernameAlreadyExistsException {
         if(userRepository.existsByEmail(email)) {
             throw new EmailAlreadyExistsException("Email already exists");
+        }
+        if(userRepository.existsByUsername(username)) {
+            throw new UsernameAlreadyExistsException("Username already exists");
         }
 
         //gen OTP
@@ -76,19 +81,19 @@ public class OtpService {
     }
 
     @Transactional
-    public Long verifyRegister(String email, String otp, String rawPassword, String fullName, String username, String phone) {
+    public Long verifyRegister(String email, String otp, String rawPassword, String fullName, String username, String phone) throws InvalidOtpException, EmailAlreadyExistsException {
         var ev = emailVerificationRepository.findByEmailAndPurposeAndUsedFalse(email, "REGISTER")
-                .orElseThrow(() -> new IllegalArgumentException("OTP not found"));
+                .orElseThrow(() -> new InvalidOtpException("OTP not found"));
 
         var now = Instant.now();
-        if (ev.getExpiresAt().isBefore(now)) throw new IllegalArgumentException("OTP expired");
-        if (ev.getAttempts() >= ev.getMaxAttempts()) throw new IllegalArgumentException("Too many attempts");
+        if (ev.getExpiresAt().isBefore(now)) throw new InvalidOtpException("OTP expired");
+        if (ev.getAttempts() >= ev.getMaxAttempts()) throw new InvalidOtpException("Too many attempts");
 
         ev.setAttempts(ev.getAttempts() + 1);
         emailVerificationRepository.save(ev);
 
         if (!passwordEncoder.matches(otp, ev.getOtpHash())) {
-            throw new IllegalArgumentException("OTP invalid");
+            throw new InvalidOtpException("OTP invalid");
         }
 
         // OTP đúng: mark used
@@ -98,7 +103,7 @@ public class OtpService {
         // Tạo user (ManyToOne Role)
         if (userRepository.existsByEmail(email)) {
             // Trường hợp race condition: email vừa được tạo ở nơi khác
-            throw new IllegalArgumentException("Email already exists");
+            throw new EmailAlreadyExistsException("Email already exists");
         }
         var roleUser = roleRepository.findByName("USER").orElseThrow();
         var user = User.builder()
@@ -113,16 +118,16 @@ public class OtpService {
     }
 
     @Transactional
-    public void resendOtp(String email) {
+    public void resendOtp(String email) throws InvalidOtpException {
         var ev = emailVerificationRepository.findByEmailAndPurposeAndUsedFalse(email, "REGISTER")
-                .orElseThrow(() -> new IllegalArgumentException("No pending OTP for this email"));
+                .orElseThrow(() -> new InvalidOtpException("No pending OTP for this email"));
 
         var now = Instant.now();
         if (Duration.between(ev.getLastSentAt(), now).compareTo(RESEND_COOLDOWN) < 0) {
-            throw new IllegalArgumentException("Please wait before requesting another OTP");
+            throw new InvalidOtpException("Please wait before requesting another OTP");
         }
         if (ev.getResendCount() >= 5) {
-            throw new IllegalArgumentException("Resend limit reached");
+            throw new InvalidOtpException("Resend limit reached");
         }
 
         var otp = genOtp();
@@ -132,7 +137,6 @@ public class OtpService {
         ev.setResendCount(ev.getResendCount() + 1);
         ev.setAttempts(0);
         emailVerificationRepository.save(ev);
-
         mailService.sendOtp(email, otp);
     }
 
