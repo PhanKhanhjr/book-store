@@ -86,8 +86,14 @@ public class OtpService {
                 .orElseThrow(() -> new InvalidOtpException("OTP not found"));
 
         var now = Instant.now();
-        if (ev.getExpiresAt().isBefore(now)) throw new InvalidOtpException("OTP expired");
-        if (ev.getAttempts() >= ev.getMaxAttempts()) throw new InvalidOtpException("Too many attempts");
+        if (ev.getExpiresAt().isBefore(now)) {
+            emailVerificationRepository.delete(ev);
+            throw new InvalidOtpException("OTP expired");
+        }
+        if (ev.getAttempts() >= ev.getMaxAttempts()) {
+            emailVerificationRepository.delete(ev);
+            throw new InvalidOtpException("Too many attempts");
+        }
 
         ev.setAttempts(ev.getAttempts() + 1);
         emailVerificationRepository.save(ev);
@@ -105,7 +111,7 @@ public class OtpService {
             // Trường hợp race condition: email vừa được tạo ở nơi khác
             throw new EmailAlreadyExistsException("Email already exists");
         }
-        var roleUser = roleRepository.findByName("USER").orElseThrow();
+        var roleUser = roleRepository.findByName("ROLE_USER").orElseThrow();
         var user = User.builder()
                 .email(email)
                 .username(username)
@@ -113,6 +119,7 @@ public class OtpService {
                 .phone(phone)
                 .password(passwordEncoder.encode(rawPassword))
                 .role(roleUser)
+                .enabled(true)
                 .build();
         return userRepository.save(user).getId();
     }

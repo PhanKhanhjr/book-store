@@ -3,6 +3,7 @@ package phankhanh.book_store.util;
 import com.nimbusds.jose.util.Base64;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -30,19 +31,43 @@ public class SecurityUtil {
     public static final MacAlgorithm JWT_ALGORITHM = MacAlgorithm.HS512;
 
 
-    public String createToken (Authentication authentication) {
-        Instant now = Instant.now();
-        Instant validity = now.plus(this.jwtExpirationInSeconds, ChronoUnit.SECONDS);
+//    public String createToken (Authentication authentication) {
+//        Instant now = Instant.now();
+//        Instant validity = now.plus(this.jwtExpirationInSeconds, ChronoUnit.SECONDS);
+//        var principal = (CustomUserDetails) authentication.getPrincipal();
+//
+//        JwtClaimsSet claims = JwtClaimsSet.builder()
+//                .issuedAt(now)
+//                .expiresAt(validity)
+//                .subject(authentication.getName())
+//                .claims("userId", principal.getId())
+//                .build();
+//        JwsHeader jwsHeader = JwsHeader.with(JWT_ALGORITHM).build();
+//        return this.jwtEncoder.encode(JwtEncoderParameters.from(jwsHeader, claims)).getTokenValue();
+//    }
+public String createToken(Authentication authentication) {
+    Instant now = Instant.now();
+    Instant exp  = now.plusSeconds(this.jwtExpirationInSeconds);
 
-        JwtClaimsSet claims = JwtClaimsSet.builder()
-                .issuedAt(now)
-                .expiresAt(validity)
-                .subject(authentication.getName())
-                .claim("phankhanh", authentication)
-                .build();
-        JwsHeader jwsHeader = JwsHeader.with(JWT_ALGORITHM).build();
-        return this.jwtEncoder.encode(JwtEncoderParameters.from(jwsHeader, claims)).getTokenValue();
-    }
+    // principal phải là CustomUserDetails để lấy được id
+    var principal = (CustomUserDetails) authentication.getPrincipal();
+
+    // convert authorities -> ["ROLE_ADMIN", "ROLE_USER"] (hoặc bỏ "ROLE_" tuỳ convention)
+    var roles = principal.getAuthorities()
+            .stream()
+            .map(GrantedAuthority::getAuthority)
+            .toList();
+
+    JwtClaimsSet claims = JwtClaimsSet.builder()
+            .issuedAt(now)
+            .expiresAt(exp)
+            .subject(principal.getUsername())
+            .claim("userId", principal.getId())
+            .claim("roles", roles)
+            .build();
+    var headers = JwsHeader.with(JWT_ALGORITHM).build();
+    return jwtEncoder.encode(JwtEncoderParameters.from(headers,claims)).getTokenValue();
+}
 
     /**
      * Get the login of the current user.

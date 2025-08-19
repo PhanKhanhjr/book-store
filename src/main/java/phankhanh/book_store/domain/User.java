@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
+import org.springframework.stereotype.Component;
 import phankhanh.book_store.util.SecurityUtil;
 import phankhanh.book_store.util.constant.GenderEnum;
 
@@ -28,10 +29,15 @@ public class User {
     private GenderEnum gender;
     private LocalDate birthDate;
     private String phone;
+    @Column(nullable = false)
+    boolean enabled = false;
     private Instant createdAt;
     private Instant updatedAt;
     private String createdBy;
     private String updatedBy;
+    private Instant deletedAt;
+    @Column(name = "email_active", insertable = false, updatable = false, length = 255)
+    private String emailActive;
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id", nullable = false)
     @ToString.Exclude
@@ -66,7 +72,12 @@ public class User {
         this.updatedBy = SecurityUtil.getCurrentUserLogin().isPresent() == true
                 ? SecurityUtil.getCurrentUserLogin().get()
                 : "";
-
         this.updatedAt = Instant.now();
+    }
+    public void markDeleted() {
+        this.enabled = false;
+        if (this.deletedAt == null) {
+            this.deletedAt = Instant.now();
+        }
     }
 }
