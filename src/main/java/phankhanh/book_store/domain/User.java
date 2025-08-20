@@ -1,5 +1,6 @@
 package phankhanh.book_store.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
@@ -10,6 +11,8 @@ import phankhanh.book_store.util.constant.GenderEnum;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -20,8 +23,8 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
-    private String fullName;
     private String username;
+    private String fullName;
     @NotBlank(message = "Email cannot be empty")
     private String email;
     @NotBlank(message = "Password cannot be empty")
@@ -46,6 +49,11 @@ public class User {
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     @ToString.Exclude
     private java.util.List<Address> addresses = new java.util.ArrayList<>();
+
+    @JsonIgnore
+    @Builder.Default
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<RefreshToken> refreshTokens = new ArrayList<>();
 
 
     // helper methods (tiện thêm/xoá và đồng bộ 2 chiều)

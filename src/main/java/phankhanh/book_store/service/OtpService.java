@@ -81,7 +81,7 @@ public class OtpService {
     }
 
     @Transactional
-    public Long verifyRegister(String email, String otp, String rawPassword, String fullName, String username, String phone) throws InvalidOtpException, EmailAlreadyExistsException {
+    public Long verifyRegister(String email, String otp, String rawPassword,String username, String fullName, String phone) throws InvalidOtpException, EmailAlreadyExistsException {
         var ev = emailVerificationRepository.findByEmailAndPurposeAndUsedFalse(email, "REGISTER")
                 .orElseThrow(() -> new InvalidOtpException("OTP not found"));
 
@@ -120,6 +120,7 @@ public class OtpService {
                 .password(passwordEncoder.encode(rawPassword))
                 .role(roleUser)
                 .enabled(true)
+                .emailActive("ACTIVE") // Set email as active
                 .build();
         return userRepository.save(user).getId();
     }

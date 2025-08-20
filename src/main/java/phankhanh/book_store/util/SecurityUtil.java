@@ -10,11 +10,13 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.*;
 import org.springframework.stereotype.Service;
+import phankhanh.book_store.config.SecurityConfiguration;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
 import java.util.Optional;
 
 @Service
@@ -52,7 +54,7 @@ public String createToken(Authentication authentication) {
     // principal phải là CustomUserDetails để lấy được id
     var principal = (CustomUserDetails) authentication.getPrincipal();
 
-    // convert authorities -> ["ROLE_ADMIN", "ROLE_USER"] (hoặc bỏ "ROLE_" tuỳ convention)
+    // convert authorities -> ["ROLE_ADMIN", "ROLE_USER"]
     var roles = principal.getAuthorities()
             .stream()
             .map(GrantedAuthority::getAuthority)
@@ -68,6 +70,24 @@ public String createToken(Authentication authentication) {
     var headers = JwsHeader.with(JWT_ALGORITHM).build();
     return jwtEncoder.encode(JwtEncoderParameters.from(headers,claims)).getTokenValue();
 }
+
+    // ✅ Dùng cho /refresh
+    public String createToken(String email, Long userId, Collection<String> roles) {
+        Instant now = Instant.now();
+        Instant exp = now.plusSeconds(jwtExpirationInSeconds);
+
+        var claims = JwtClaimsSet.builder()
+                .issuedAt(now)
+                .expiresAt(exp)
+                .subject(email)         // "sub"
+                .claim("userId", userId)
+                .claim("roles", roles)   // ["ROLE_ADMIN", ...]
+                .build();
+
+        var header = JwsHeader.with(JWT_ALGORITHM).build();
+        return jwtEncoder.encode(JwtEncoderParameters.from(header, claims))
+                .getTokenValue();
+    }
 
     /**
      * Get the login of the current user.

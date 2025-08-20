@@ -49,10 +49,10 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(
                         authz -> authz
                                 .requestMatchers(WHITELIST).permitAll()
-                                .anyRequest().permitAll()
+                                .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(Customizer.withDefaults())
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter()))
                         .authenticationEntryPoint(customAuthenticationEntryPoint)
                 )
 
@@ -85,15 +85,19 @@ public class SecurityConfiguration {
     }
     @Bean
     public JwtEncoder jwtEncoder() {
+        // Dùng cùng secret/key với decoder
         return new NimbusJwtEncoder(new ImmutableSecret<>(getSecretKey()));
     }
+
     @Bean
-    public JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
-        grantedAuthoritiesConverter.setAuthorityPrefix("");
-        grantedAuthoritiesConverter.setAuthoritiesClaimName("permission");
-        JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
-        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
-        return jwtAuthenticationConverter;
+    public JwtAuthenticationConverter jwtAuthConverter() {
+        JwtGrantedAuthoritiesConverter gac = new JwtGrantedAuthoritiesConverter();
+        gac.setAuthoritiesClaimName("roles"); // đọc từ claim "roles"
+        gac.setAuthorityPrefix("");           // GIỮ nguyên "ROLE_ADMIN" (không thêm gì)
+        JwtAuthenticationConverter jac = new JwtAuthenticationConverter();
+        jac.setJwtGrantedAuthoritiesConverter(gac);
+        return jac;
     }
+
+
 }

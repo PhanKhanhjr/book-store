@@ -76,8 +76,13 @@ public class UserService {
     public void softDeleteSelf(Long selfId) throws IdInvalidException {
         User u = userRepository.findById(selfId)
                 .orElseThrow(() -> new IdInvalidException("User not found"));
-        if (u.getDeletedAt() == null) {
-            u.markDeleted();
+//        if (u.getDeletedAt() == null) {
+//            u.markDeleted();
+//        }
+        if(u.getDeletedAt() == null) {
+            u.setDeletedAt(Instant.now());
+            u.setEnabled(false);
+            userRepository.save(u);
         }
     }
     public void hardDeleteById(Long id) throws IdInvalidException {
