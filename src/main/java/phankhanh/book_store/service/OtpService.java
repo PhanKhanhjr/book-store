@@ -16,6 +16,7 @@ import phankhanh.book_store.util.error.UsernameAlreadyExistsException;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +27,7 @@ public class OtpService {
     private final MailService mailService;
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
+    private final RefreshTokenService refreshTokenService;
 
     private static final Duration EXPIRE = Duration.ofMinutes(10);
     private static final Duration RESEND_COOLDOWN = Duration.ofSeconds(60);
@@ -147,5 +149,69 @@ public class OtpService {
         emailVerificationRepository.save(ev);
         mailService.sendOtp(email, otp);
     }
+
+    @Transactional
+    public void startForgotPassword(String email) {
+        var userOtp = this.UserRepository.findByEmail(email);
+        if(userOtp.isEmpty()) return;
+        User user = userOtp.get();
+
+        if (user.getDeletedAt() != null || !user.isEnabled() || !"ACTIVE".equals(user.getEmailActive())) {
+            return;
+        }
+        this.emailVerificationRepository.deleteAllByEmailAndPurpose(email, "FORGOT");
+
+        // Generate OTP
+        var otp = genOtp();
+        var otpHash = this.passwordEncoder.encode(otp);
+        var ev = EmailVerification.builder()
+                .email(email)
+                .purpose("FORGOT")
+                .otpHash(otpHash)
+                .attempts(0)
+                .maxAttempts(5)
+                .used(false)
+                .expiresAt(Instant.now().plus(10, ChronoUnit.MINUTES))
+                .build()
+                ;
+        this.emailVerificationRepository.save(ev);
+        this.mailService.sendOtp(email, "Your OTP for password reset is: " + otp + " Do not share this OTP with anyone.");
+    }
+
+    @Transactional
+    public void verifyForgotPassword(String email, String otp, String newPassword) {
+        var ev = this.emailVerificationRepository.findByEmailAndPurposeAndUsedFalse(email, "FORGOT")
+                .orElseThrow(() -> new InvalidOtpException("OTP not found"));
+        var now = Instant.now();
+        if(ev.getExpiresAt().isBefore(now)) {
+            this.emailVerificationRepository.delete(ev);
+            throw new InvalidOtpException("OTP expired");
+        }
+        if (ev.getAttempts() >= ev.getMaxAttempts()) {
+            emailVerificationRepository.delete(ev);
+            throw new InvalidOtpException("Too many attempts");
+        }
+        ev.setAttempts(ev.getAttempts() + 1);
+        this.emailVerificationRepository.save(ev);
+
+        if(!passwordEncoder.matches(otp, ev.getOtpHash())) {
+            throw new InvalidOtpException("OTP invalid");
+        }
+
+        //OTP Matches: mark used
+        ev.setUsed(true);
+        this.emailVerificationRepository.save(ev);
+
+        // Update user password
+        var user = this.UserRepository.findByEmail(email).orElseThrow();
+        if (user.getDeletedAt() != null || !user.isEnabled() || !"ACTIVE".equals(user.getEmailActive())) {
+            throw new IllegalStateException("Account inactive");
+        }
+        user.setPassword(passwordEncoder.encode(newPassword));
+        this.userRepository.save(user);
+
+        this.refreshTokenService.revokeAllActiveByUserId(user.getId());
+    }
+
 
 }

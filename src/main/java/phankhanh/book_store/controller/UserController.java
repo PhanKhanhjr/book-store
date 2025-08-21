@@ -1,9 +1,12 @@
 package phankhanh.book_store.controller;
 
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.*;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -11,13 +14,16 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+import phankhanh.book_store.DTO.request.ReqChangePassword;
 import phankhanh.book_store.DTO.request.ReqUserUpdate;
 import phankhanh.book_store.DTO.response.ResUserDTO;
 import phankhanh.book_store.DTO.response.RestResponse;
 import phankhanh.book_store.DTO.response.ResultPaginationDTO;
 import phankhanh.book_store.domain.User;
+import phankhanh.book_store.service.AccountService;
 import phankhanh.book_store.service.UserDetailsCustom;
 import phankhanh.book_store.service.UserService;
+import phankhanh.book_store.util.CookieUtil;
 import phankhanh.book_store.util.CustomUserDetails;
 import phankhanh.book_store.util.anotation.ApiMessage;
 import phankhanh.book_store.util.error.IdInvalidException;
@@ -30,9 +36,13 @@ import java.util.Map;
 public class UserController {
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
-    public UserController(UserService userService, PasswordEncoder passwordEncoder) {
+    private final AccountService accountService;
+    @Value("${phankhanh.app.prod}")
+    private boolean prod;
+    public UserController(UserService userService, PasswordEncoder passwordEncoder, AccountService accountService) {
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
+        this.accountService = accountService;
     }
     @GetMapping("/users")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
@@ -96,6 +106,29 @@ public class UserController {
         Long userId = jwt.getClaim("userId");
         userService.softDeleteSelf(userId);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @PutMapping("/users/change-password")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<RestResponse<Void>> changePassword(@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody ReqChangePassword req) throws IdInvalidException {
+        if (!req.newPassword().equals(req.confirmPassword())) {
+            var bad = new RestResponse<Void>();
+            bad.setStatusCode(400);
+            bad.setError("Bad Request");
+            bad.setMessage("Password confirmation does not match");
+            return ResponseEntity.badRequest().body(bad);
+        }
+        Long userId = jwt.getClaim("userId");
+        this.accountService.changePassword(userId, req.oldPassword(), req.newPassword());
+
+        //clear refresh token cookie
+        ResponseCookie del = CookieUtil.deleteRefreshCookie(prod);
+        var ok = new RestResponse<Void>();
+        ok.setStatusCode(200);
+        ok.setMessage("Password changed successfully, please login again");
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, del.toString())
+                .body(ok);
     }
 
     //debug endpoint to check authentication and roles

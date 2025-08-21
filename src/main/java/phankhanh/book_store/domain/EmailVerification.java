@@ -2,6 +2,7 @@ package phankhanh.book_store.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
 
@@ -33,12 +34,14 @@ public class EmailVerification {
     @Builder.Default
     private int resendCount = 0;
 
-    @Column(nullable=false)
+    @CreationTimestamp
+    @Column(name = "last_sent_at", nullable = false, updatable = false)
     private Instant lastSentAt;
 
     @Builder.Default
     private boolean used = false;
 
-    @Column(nullable=false)
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 }

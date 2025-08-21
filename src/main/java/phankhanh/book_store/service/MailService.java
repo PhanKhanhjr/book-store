@@ -11,8 +11,8 @@ public class MailService {
     public void sendOtp (String to, String opt) {
         var msg = new SimpleMailMessage();
         msg.setTo(to);
-        msg.setSubject("Verify your email");
-        msg.setText("Your OTP is: " + opt + "\nThis OTP will expire in 5 minutes.");
+        msg.setSubject("Verify for PKBooks");
+        msg.setText("Your OTP is: " + opt + "\nThis OTP will expire in 10 minutes.");
         mailSender.send(msg);
     }
 }

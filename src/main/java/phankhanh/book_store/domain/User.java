@@ -39,8 +39,9 @@ public class User {
     private String createdBy;
     private String updatedBy;
     private Instant deletedAt;
-    @Column(name = "email_active", insertable = false, updatable = false, length = 255)
-    private String emailActive;
+    @Column(name = "email_active", nullable = false, length = 255)
+    @Builder.Default
+    private String emailActive = "ACTIVE";
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id", nullable = false)
     @ToString.Exclude
@@ -71,9 +72,12 @@ public class User {
         this.createdBy = SecurityUtil.getCurrentUserLogin().isPresent() == true
                 ? SecurityUtil.getCurrentUserLogin().get()
                 : "";
-
         this.createdAt = Instant.now();
+        if (this.emailActive == null || this.emailActive.isBlank()) {
+            this.emailActive = "ACTIVE";
+        }
     }
+
 
     @PreUpdate
     public void handleBeforeUpdate() {
@@ -81,11 +85,5 @@ public class User {
                 ? SecurityUtil.getCurrentUserLogin().get()
                 : "";
         this.updatedAt = Instant.now();
-    }
-    public void markDeleted() {
-        this.enabled = false;
-        if (this.deletedAt == null) {
-            this.deletedAt = Instant.now();
-        }
     }
 }

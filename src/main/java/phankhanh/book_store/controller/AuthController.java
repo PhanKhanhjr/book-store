@@ -11,10 +11,7 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import phankhanh.book_store.DTO.request.ReqLoginDTO;
-import phankhanh.book_store.DTO.request.ReqRegister;
-import phankhanh.book_store.DTO.request.ReqResendOtp;
-import phankhanh.book_store.DTO.request.ReqVerifyEmail;
+import phankhanh.book_store.DTO.request.*;
 import phankhanh.book_store.DTO.response.ResLoginDTO;
 import phankhanh.book_store.DTO.response.RestResponse;
 import phankhanh.book_store.domain.User;
@@ -145,5 +142,26 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, del.toString())
                 .body(res);
+    }
+
+    @PostMapping("/forgot-password/start")
+    @ApiMessage("Start forgot password process, send OTP to email")
+    public ResponseEntity<?> forgotPasswordStart(@Valid @RequestBody ReqForgotStart req) {
+        this.otpService.startForgotPassword(req.email());
+        return ResponseEntity.ok(Map.of("message", "OTP sent to email"));
+    }
+
+    @PostMapping("/forgot-password/verify")
+    @ApiMessage("Verify OTP and reset password")
+    public ResponseEntity<?> forgotPasswordVerify(@Valid @RequestBody ReqForgotVerify req) {
+        if (!req.newPassword().equals(req.confirmPassword())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Password confirmation does not match"));
+        }
+        this.otpService.verifyForgotPassword(req.email(), req.otp(), req.newPassword());
+
+        ResponseCookie del = CookieUtil.deleteRefreshCookie(prod);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, del.toString())
+                .body(Map.of("message", "Password reset successfully, please login again"));
     }
 }
