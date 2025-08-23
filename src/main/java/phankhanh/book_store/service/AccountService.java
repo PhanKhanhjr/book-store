@@ -1,11 +1,9 @@
 package phankhanh.book_store.service;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import phankhanh.book_store.Repository.UserRepository;
+import phankhanh.book_store.repository.UserRepository;
 import phankhanh.book_store.domain.User;
 import phankhanh.book_store.util.error.IdInvalidException;
 

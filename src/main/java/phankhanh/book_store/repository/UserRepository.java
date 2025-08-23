@@ -1,12 +1,10 @@
-package phankhanh.book_store.Repository;
+package phankhanh.book_store.repository;
 
-import jakarta.validation.constraints.NotBlank;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
 import phankhanh.book_store.domain.User;
 
 import java.time.Instant;

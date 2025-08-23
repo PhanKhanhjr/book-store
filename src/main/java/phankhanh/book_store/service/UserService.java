@@ -6,14 +6,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import phankhanh.book_store.DTO.request.ReqUserUpdate;
 import phankhanh.book_store.DTO.response.ResUserDTO;
-import phankhanh.book_store.Repository.UserRepository;
+import phankhanh.book_store.repository.UserRepository;
 import phankhanh.book_store.domain.User;
 import phankhanh.book_store.util.constant.GenderEnum;
 import phankhanh.book_store.util.error.DataInvalid;
 import phankhanh.book_store.util.error.IdInvalidException;
 
 import java.time.Instant;
-import java.util.Optional;
 
 @Service
 public class UserService {

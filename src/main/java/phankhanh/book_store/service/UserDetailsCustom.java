@@ -6,11 +6,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
-import phankhanh.book_store.Repository.UserRepository;
-import phankhanh.book_store.domain.User;
+import phankhanh.book_store.repository.UserRepository;
 import phankhanh.book_store.util.CustomUserDetails;
 
-import java.util.Collections;
 import java.util.List;
 
 //@Component("userDetailsService")
