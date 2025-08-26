@@ -1,6 +1,9 @@
 package phankhanh.book_store.DTO.response;
 
+import lombok.Builder;
+
 import java.time.Instant;
+@Builder
 public record ResBookListItemDTO(
         Long id,
         String title,

@@ -37,6 +37,7 @@ public class SecurityConfiguration {
             "/actuator/health",
             "/v3/api-docs/**", "/swagger-ui/**",
             "/api/v1/auth/**",
+            "/api/v1/books/**",
             "/public/**",
             "/"
     };
@@ -48,6 +49,7 @@ public class SecurityConfiguration {
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(
                         authz -> authz
+                                .requestMatchers("api/v1/admin/**").hasRole("ADMIN")
                                 .requestMatchers(WHITELIST).permitAll()
                                 .anyRequest().authenticated()
                 )
