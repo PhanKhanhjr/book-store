@@ -3,6 +3,7 @@ package phankhanh.book_store.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import phankhanh.book_store.domain.Book;
@@ -10,7 +11,7 @@ import phankhanh.book_store.util.constant.ProductStatus;
 
 import java.util.Optional;
 
-public interface BookRepository extends JpaRepository<Book, Long> {
+public interface BookRepository extends JpaRepository<Book, Long>, BookRepositoryCustom, JpaSpecificationExecutor<Book> {
 
     Optional<Book> findBySlugAndDeletedFalse(String slug);
 

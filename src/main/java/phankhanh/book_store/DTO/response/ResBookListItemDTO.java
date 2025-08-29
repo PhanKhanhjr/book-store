@@ -1,6 +1,7 @@
 package phankhanh.book_store.DTO.response;
 
 import lombok.Builder;
+import phankhanh.book_store.util.constant.ProductStatus;
 
 import java.time.Instant;
 @Builder
@@ -14,5 +15,6 @@ public record ResBookListItemDTO(
         Instant saleStartAt,
         Instant saleEndAt,
         Long effectivePrice,
-        Integer sold
+        Integer sold,
+        ProductStatus status
 ) {}
