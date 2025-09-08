@@ -92,6 +92,12 @@ public class BookRepositoryImpl implements BookRepositoryCustom {
             qIds.setParameter("q", qLower);
             qIds.setParameter("likeAll", "%" + qLower + "%");
         }
+        String qParam = hasQ ? qLower : "___noq___";
+        qIds.setParameter("q", qParam);
+
+        if (hasQ) {
+            qIds.setParameter("likeAll", "%" + qLower + "%");
+        }
 
         @SuppressWarnings("unchecked")
         java.util.List<Number> idNums = qIds.getResultList();

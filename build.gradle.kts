@@ -42,6 +42,7 @@ dependencies {
 	annotationProcessor("com.querydsl:querydsl-apt:5.1.0:jakarta")
 	annotationProcessor("jakarta.annotation:jakarta.annotation-api:2.1.1")
 	annotationProcessor("jakarta.persistence:jakarta.persistence-api:3.1.0")
+	implementation("com.google.firebase:firebase-admin:9.3.0")
 }
 
 tasks.withType<Test> {
