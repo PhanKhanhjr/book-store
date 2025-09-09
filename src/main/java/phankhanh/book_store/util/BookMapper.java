@@ -90,10 +90,10 @@ public final class BookMapper {
 
     /* ================= ENTITY -> DTO ================= */
 
+    // Catalog/List item: trả thumbnail (160x240.webp) của ảnh chính (sortOrder=0), nếu không có thì ảnh đầu tiên.
     public static ResBookListItemDTO toListItem(Book b) {
-        String thumb = b.getImages().stream()
-                .sorted(Comparator.comparingInt(i -> i.getSortOrder() == null ? Integer.MAX_VALUE : i.getSortOrder()))
-                .map(BookImage::getUrl).findFirst().orElse(null);
+        BookImage main = chooseMainImage(b.getImages());
+        String thumb = (main != null) ? toThumbUrl(main.getUrl()) : null;
 
         Long effective = calcEffectivePrice(b.getPrice(), b.getSalePrice(), b.getSaleStartAt(), b.getSaleEndAt());
         int sold = b.getInventory() != null ? b.getInventory().getSold() : 0;
@@ -105,6 +105,7 @@ public final class BookMapper {
         );
     }
 
+    // Detail: trả full list ảnh (kèm variants)
     public static ResBookDetailDTO toDetail(Book b) {
         Long effective = calcEffectivePrice(b.getPrice(), b.getSalePrice(), b.getSaleStartAt(), b.getSaleEndAt());
 
@@ -121,10 +122,11 @@ public final class BookMapper {
                 .map(c -> new ResBookDetailDTO.SimpleRef(c.getId(), c.getName(), c.getSlug()))
                 .toList() : List.<ResBookDetailDTO.SimpleRef>of();
 
+        // ➜ SỬA Ở ĐÂY: map sang BookImageResponse (có variants)
         var images = b.getImages() != null ? b.getImages().stream()
                 .sorted(Comparator.comparingInt(i -> i.getSortOrder() == null ? Integer.MAX_VALUE : i.getSortOrder()))
-                .map(i -> new ResBookDetailDTO.ImageItem(i.getId(), i.getUrl(), i.getSortOrder()))
-                .toList() : List.<ResBookDetailDTO.ImageItem>of();
+                .map(BookMapper::toImageResponse)
+                .toList() : List.<BookImageResponse>of();
 
         Integer stock = b.getInventory() != null ? b.getInventory().getStock() : 0;
         Integer sold  = b.getInventory() != null ? b.getInventory().getSold()  : 0;
@@ -155,6 +157,51 @@ public final class BookMapper {
         }
         return p;
     }
+
+    // Ưu tiên ảnh sortOrder = 0, nếu không có thì lấy ảnh có sortOrder nhỏ nhất
+    private static BookImage chooseMainImage(List<BookImage> images) {
+        if (images == null || images.isEmpty()) return null;
+        for (BookImage bi : images) {
+            if (bi.getSortOrder() != null && bi.getSortOrder() == 0) return bi;
+        }
+        return images.stream()
+                .min(Comparator.comparingInt(i -> i.getSortOrder() == null ? Integer.MAX_VALUE : i.getSortOrder()))
+                .orElse(null);
+    }
+
+    // URL thumbnail 160x240 (Firebase Extension pattern: name_WIDTHxHEIGHT.webp)
+    private static String toThumbUrl(String originalUrl) {
+        return withSize(originalUrl, 160, 240);
+    }
+
+    // Map 1 BookImage -> BookImageResponse (có variants)
+    public static BookImageResponse toImageResponse(BookImage i) {
+        String u = i.getUrl();
+        return BookImageResponse.builder()
+                .id(i.getId())
+                .url(u)
+                .sortOrder(i.getSortOrder())
+                .variants(BookImageResponse.Variants.builder()
+                        .thumb(withSize(u, 160, 240))
+                        .medium(withSize(u, 320, 480))
+                        .large(withSize(u, 640, 960))
+                        .xlarge(withSize(u, 960, 1440))
+                        .build())
+                .build();
+    }
+
+    /** Tạo URL biến thể theo pattern của Firebase Resize Images:
+     *  abc.jpg -> abc_160x240.webp (nếu outExt=null thì giữ ext gốc) */
+    private static String withSize(String url, int w, int h) {
+        int q = url.indexOf('?');
+        String base = (q >= 0) ? url.substring(0, q) : url;
+        int dot = base.lastIndexOf('.');
+        if (dot < 0) return base; // không có extension
+        String name = base.substring(0, dot);
+        String ext  = base.substring(dot + 1); // lấy đuôi gốc (.jpg, .png, .webp)
+        return name + "_" + w + "x" + h + "." + ext;
+    }
+
 
     // Parse enum an toàn, không phân biệt hoa thường; trả null nếu null; quăng lỗi rõ nếu sai giá trị
     private static <E extends Enum<E>> E parseEnum(Class<E> type, String name) {

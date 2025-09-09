@@ -33,7 +33,7 @@ public record ResBookDetailDTO(
         Instant saleEndAt,
         Long effectivePrice,
 
-        List<ImageItem> images,
+        List<BookImageResponse> images,
         Integer stock,
         Integer sold,
 
@@ -41,5 +41,4 @@ public record ResBookDetailDTO(
         Instant updatedAt
 ) {
     public record SimpleRef(Long id, String name, String slug) {}
-    public record ImageItem(Long id, String url, Integer sortOrder) {}
 }

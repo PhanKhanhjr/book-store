@@ -35,7 +35,7 @@ public record ReqBookCreate(
         Instant saleEndAt,
 
         // Ảnh & tồn kho
-        @NotEmpty List<ImageItem> images,
+        List<ImageItem> images,
         @NotNull @PositiveOrZero Integer initialStock
 ) {
     public record ImageItem(

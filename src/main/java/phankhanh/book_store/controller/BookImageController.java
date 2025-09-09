@@ -1,17 +1,28 @@
-//package phankhanh.book_store.controller;
+package phankhanh.book_store.controller;
 
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import phankhanh.book_store.DTO.response.BookImageResponse;
+import phankhanh.book_store.service.BookImageService;
+import phankhanh.book_store.service.BookService;
 import phankhanh.book_store.service.StorageService;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/uploads")
-public class UploadController {
+public class BookImageController {
     private final StorageService storageService;
+    private final BookService bookService;
+    private final BookImageService bookImageService;
 
-    public UploadController(StorageService storageService) {
+    public BookImageController(StorageService storageService, BookService bookService, BookImageService bookImageService) {
+        this.bookService = bookService;
         this.storageService = storageService;
+        this.bookImageService = bookImageService;
     }
 
     // Đơn giản: upload → public URL
@@ -36,6 +47,15 @@ public class UploadController {
     public ResponseEntity<?> delete(@RequestParam("objectKey") String objectKey) {
         boolean ok = storageService.delete(objectKey);
         return ResponseEntity.ok(java.util.Map.of("deleted", ok));
+    }
+
+    @PostMapping(path = "/{id}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<BookImageResponse>> addImages(
+            @PathVariable("id") Long bookId,
+            @RequestParam("file") List<MultipartFile> files
+    ) throws Exception {
+        return ResponseEntity.ok(bookImageService.addImages(bookId, files));
     }
 
     record UploadResponse(String publicUrl, String signedUrl) {}

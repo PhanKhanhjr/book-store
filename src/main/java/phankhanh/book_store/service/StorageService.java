@@ -75,4 +75,5 @@ public class StorageService {
         Storage gcs = storageClient.bucket(bucket).getStorage();
         return gcs.delete(bucket, objectKey);
     }
+
 }
