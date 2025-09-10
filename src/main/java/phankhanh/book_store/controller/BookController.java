@@ -35,7 +35,7 @@ public class BookController {
             @RequestParam(required = false) Long publisherId,
             @RequestParam(required = false) Long supplierId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "12") int size,
+            @RequestParam(defaultValue = "1") int size,
             @RequestParam(defaultValue = "createdAt") String sort,
             @RequestParam(defaultValue = "DESC") Sort.Direction direction
     ) {
@@ -105,8 +105,12 @@ public class BookController {
             // Hoặc tuổi theo số năm (tùy chọn)
             @RequestParam(required = false) Integer ageMinYears,
             @RequestParam(required = false) Integer ageMaxYears,
-            Pageable pageable
+            @RequestParam(defaultValue = "0")  int page,
+            @RequestParam(defaultValue = "12") int size,
+            @RequestParam(defaultValue = "createdAt") String sort,
+            @RequestParam(defaultValue = "DESC") Sort.Direction direction
     ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sort));
         Page<Book> books = bookService.filterBooks(category, publisher, supplier, language, status,priceMin, priceMax, ageMin, ageMax,ageMinYears,ageMaxYears,  pageable);
         Page<ResBookListItemDTO> result = books.map(BookMapper::toListItem);
         return ResponseEntity.ok(result);

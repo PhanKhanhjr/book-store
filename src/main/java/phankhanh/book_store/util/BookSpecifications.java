@@ -1,7 +1,10 @@
 package phankhanh.book_store.util;
 
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import org.springframework.data.jpa.domain.Specification;
 import phankhanh.book_store.domain.Book;
+import phankhanh.book_store.domain.Category;
 import phankhanh.book_store.util.constant.AgeRating;
 import phankhanh.book_store.util.constant.Language;
 import phankhanh.book_store.util.constant.ProductStatus;
@@ -73,6 +76,14 @@ public class BookSpecifications {
         if (min == null && max == null) return null;
         List<AgeRating> allowed = AgeRatingUtil.between(min, max);
         return (root, query, cb) -> root.get("ageRating").in(allowed);
+    }
+    public static Specification<Book> hasAnyCategoryIds(List<Long> ids) {
+        return (root, q, cb) -> {
+            if (ids == null || ids.isEmpty()) return cb.conjunction();
+            q.distinct(true);
+            Join<Book, Category> jc = root.join("categories", JoinType.INNER);
+            return jc.get("id").in(ids);
+        };
     }
 }
 

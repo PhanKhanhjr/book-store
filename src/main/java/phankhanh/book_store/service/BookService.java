@@ -221,9 +221,15 @@ public class BookService {
             Pageable pageable) {
         AgeRating minBucket = (ageMin != null) ? ageMin : AgeRatingUtil.fromMinYears(ageMinYears);
         AgeRating maxBucket = (ageMax != null) ? ageMax : AgeRatingUtil.fromMaxYears(ageMaxYears);
+        List<Long> categoryIds = null;
+        if (category != null && !category.isBlank()) {
+            categoryIds = categoryRepo.findDescendantIdsBySlug(category);
+            if (categoryIds.isEmpty()) return Page.empty(pageable);
+        }
 
         Specification<Book> spec = BookSpecifications.notDeleted()
-                    .and(BookSpecifications.hasCategory(category))
+                    .and(BookSpecifications.hasAnyCategoryIds(categoryIds))
+//                    .and(BookSpecifications.hasCategory(category))
                     .and(BookSpecifications.hasPublisher(publisher))
                     .and(BookSpecifications.hasSupplier(supplier))
                     .and(BookSpecifications.hasLanguage(language))
