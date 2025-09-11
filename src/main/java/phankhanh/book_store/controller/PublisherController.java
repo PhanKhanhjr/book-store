@@ -10,12 +10,12 @@ import phankhanh.book_store.repository.PublisherRepository;
 import java.util.List;
 
 @RestController
-@RequestMapping("/admin/publishers")
+@RequestMapping("api/v1/admin")
 @RequiredArgsConstructor
 public class PublisherController {
     private final PublisherRepository repo;
 
-    @PostMapping
+    @PostMapping("/publishers")
     public ResponseEntity<Publisher> create(@RequestBody Publisher req) {
         return ResponseEntity.ok(repo.save(req));
     }

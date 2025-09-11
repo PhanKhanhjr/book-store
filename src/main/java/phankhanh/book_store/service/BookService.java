@@ -145,12 +145,17 @@ public class BookService {
         }
 
         // (Tuỳ chọn) tạo inventory mặc định nếu muốn
-        if (b.getInventory() == null) {
-            Inventory inv = new Inventory();
-            inv.setBook(b); // backref; @OneToOne(mappedBy="book") trong Book => Inventory phải có field book
-            inv.setStock(0);
+        int init = (req.initialStock() == null || req.initialStock() < 0 ) ? 0 : req.initialStock();
+        Inventory inv = b.getInventory();
+        if (inv == null) {
+            inv = new Inventory();
+            inv.setBook(b);      // owning side
+            inv.setStock(init);
             inv.setSold(0);
-            b.setInventory(inv);
+            b.setInventory(inv); // inverse side (có cascade)
+        } else {
+            inv.setStock(init);
+            if (inv.getSold() == null) inv.setSold(0);
         }
 
         try {

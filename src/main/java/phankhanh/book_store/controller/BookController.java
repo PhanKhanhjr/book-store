@@ -35,7 +35,7 @@ public class BookController {
             @RequestParam(required = false) Long publisherId,
             @RequestParam(required = false) Long supplierId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "1") int size,
+            @RequestParam(defaultValue = "5") int size,
             @RequestParam(defaultValue = "createdAt") String sort,
             @RequestParam(defaultValue = "DESC") Sort.Direction direction
     ) {

@@ -9,7 +9,7 @@ import phankhanh.book_store.repository.AuthorRepository;
 import java.util.List;
 
 @RestController
-@RequestMapping("/admin/authors")
+@RequestMapping("api/v1/admin/authors")
 @RequiredArgsConstructor
 public class AuthorController {
     private final AuthorRepository repo;

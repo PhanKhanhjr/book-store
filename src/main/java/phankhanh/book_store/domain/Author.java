@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import phankhanh.book_store.util.SlugUtil;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -20,6 +21,12 @@ public class Author {
     private String name;
     @ManyToMany(mappedBy = "authors")
     private Set<Book> books = new HashSet<>();
+
+    @Column(nullable = false, length = 200, unique = true)
+    private String slug;
+
+    @PrePersist @PreUpdate
+    void prePersist() { this.slug = SlugUtil.toSlug(this.name); }
 
 
     public Author(String name) {

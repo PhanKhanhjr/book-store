@@ -2,6 +2,7 @@ package phankhanh.book_store.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import phankhanh.book_store.util.SlugUtil;
 
 @Entity
 @Table(name = "suppliers")
@@ -13,6 +14,12 @@ public class Supplier {
 
     @Column(nullable = false, length = 150)
     private String name;
+
+    @Column(nullable = false, length = 200, unique = true)
+    private String slug;
+
+    @PrePersist @PreUpdate
+    void prePersist() { this.slug = SlugUtil.toSlug(this.name); }
 
     public Supplier(String name) {
         this.name = name;

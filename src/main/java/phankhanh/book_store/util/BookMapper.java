@@ -5,6 +5,7 @@ import phankhanh.book_store.DTO.response.*;
 import phankhanh.book_store.domain.*;
 import phankhanh.book_store.util.constant.*;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.*;
 import java.util.Comparator;
@@ -95,7 +96,7 @@ public final class BookMapper {
         BookImage main = chooseMainImage(b.getImages());
         String thumb = (main != null) ? toThumbUrl(main.getUrl()) : null;
 
-        Long effective = calcEffectivePrice(b.getPrice(), b.getSalePrice(), b.getSaleStartAt(), b.getSaleEndAt());
+        BigDecimal effective = calcEffectivePrice(b.getPrice(), b.getSalePrice(), b.getSaleStartAt(), b.getSaleEndAt());
         int sold = b.getInventory() != null ? b.getInventory().getSold() : 0;
 
         return new ResBookListItemDTO(
@@ -107,7 +108,7 @@ public final class BookMapper {
 
     // Detail: trả full list ảnh (kèm variants)
     public static ResBookDetailDTO toDetail(Book b) {
-        Long effective = calcEffectivePrice(b.getPrice(), b.getSalePrice(), b.getSaleStartAt(), b.getSaleEndAt());
+        BigDecimal effective = calcEffectivePrice(b.getPrice(), b.getSalePrice(), b.getSaleStartAt(), b.getSaleEndAt());
 
         var publisher = (b.getPublisher() != null)
                 ? new ResBookDetailDTO.SimpleRef(b.getPublisher().getId(), b.getPublisher().getName(), null) : null;
@@ -147,16 +148,31 @@ public final class BookMapper {
 
     /* ================= Helper ================= */
 
-    private static long calcEffectivePrice(Long price, Long salePrice, Instant start, Instant end) {
-        long p = price == null ? 0 : price;
-        if (salePrice != null) {
-            var now = Instant.now();
-            boolean inWin = (start == null || !now.isBefore(start)) &&
-                    (end == null || !now.isAfter(end));
-            if (inWin) return salePrice;
+    private static BigDecimal calcEffectivePrice(
+            BigDecimal price,
+            BigDecimal salePrice,
+            Instant start,
+            Instant end
+    ) {
+        BigDecimal base = (price != null) ? price : BigDecimal.ZERO;
+
+        if (salePrice != null && salePrice.compareTo(BigDecimal.ZERO) > 0) {
+            Instant now = Instant.now();
+            boolean inWindow =
+                    (start == null || !now.isBefore(start)) &&
+                            (end == null   || !now.isAfter(end));
+
+            if (inWindow) {
+                // Optional: nếu không muốn giá sale cao hơn giá gốc
+                if (base.signum() > 0 && salePrice.compareTo(base) > 0) {
+                    return base;
+                }
+                return salePrice;
+            }
         }
-        return p;
+        return base;
     }
+
 
     // Ưu tiên ảnh sortOrder = 0, nếu không có thì lấy ảnh có sortOrder nhỏ nhất
     private static BookImage chooseMainImage(List<BookImage> images) {

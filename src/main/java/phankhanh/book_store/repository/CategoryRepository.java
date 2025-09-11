@@ -25,4 +25,5 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
         SELECT id FROM sub
         """, nativeQuery = true)
     List<Long> findDescendantIdsBySlug(@Param("slug") String slug);
+    List<Category> findAllByParentIsNull();
 }

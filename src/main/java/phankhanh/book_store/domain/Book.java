@@ -9,6 +9,7 @@ import phankhanh.book_store.util.constant.CoverType;
 import phankhanh.book_store.util.constant.Language;
 import phankhanh.book_store.util.constant.ProductStatus;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.*;
 
@@ -85,9 +86,9 @@ public class Book {
     private ProductStatus status;
 
     @Column(nullable = false)
-    private Long price;                 // giá gốc (VND)
+    private BigDecimal price;                 // giá gốc (VND)
 
-    private Long salePrice;             // giá khuyến mãi (nullable)
+    private BigDecimal salePrice;             // giá khuyến mãi (nullable)
     private Instant saleStartAt;
     private Instant saleEndAt;
 

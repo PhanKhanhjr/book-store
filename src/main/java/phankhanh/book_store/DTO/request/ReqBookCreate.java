@@ -1,5 +1,7 @@
 package phankhanh.book_store.DTO.request;
 import jakarta.validation.constraints.*;
+
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
@@ -29,8 +31,8 @@ public record ReqBookCreate(
         @NotBlank String ageRating,
         // Thương mại
         @NotBlank String status,
-        @NotNull @Positive Long price,
-        @Positive Long salePrice,
+        @NotNull @Positive BigDecimal price,
+        @Positive BigDecimal salePrice,
         Instant saleStartAt,
         Instant saleEndAt,
 

@@ -2,6 +2,10 @@ package phankhanh.book_store.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import phankhanh.book_store.util.SlugUtil;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "categories",
@@ -22,9 +26,19 @@ public class Category {
     @JoinColumn(name = "parent_id")
     private Category parent;
 
-    public Category(String name, String slug) {
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Category> children = new ArrayList<>();
+
+    @PrePersist
+    @PreUpdate
+    void prePersist() {
+        if (this.name != null && (this.slug == null || this.slug.isBlank())) {
+            this.slug = SlugUtil.toSlug(this.name);
+        }
+    }
+
+    public Category(String name) {
         this.name = name;
-        this.slug = slug;
     }
 }
 

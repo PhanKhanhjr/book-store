@@ -9,7 +9,7 @@ import phankhanh.book_store.repository.SupplierRepository;
 import java.util.List;
 
 @RestController
-@RequestMapping("/admin/suppliers")
+@RequestMapping("api/v1/admin/suppliers")
 @RequiredArgsConstructor
 public class SupplierController {
     private final SupplierRepository repo;

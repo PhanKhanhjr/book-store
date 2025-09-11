@@ -3,6 +3,7 @@ package phankhanh.book_store.DTO.response;
 import lombok.Builder;
 import phankhanh.book_store.util.constant.ProductStatus;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 @Builder
 public record ResBookListItemDTO(
@@ -10,11 +11,11 @@ public record ResBookListItemDTO(
         String title,
         String slug,
         String thumbnail,
-        Long price,
-        Long salePrice,
+        BigDecimal price,
+        BigDecimal salePrice,
         Instant saleStartAt,
         Instant saleEndAt,
-        Long effectivePrice,
+        BigDecimal effectivePrice,
         Integer sold,
         ProductStatus status
 ) {}

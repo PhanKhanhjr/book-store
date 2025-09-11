@@ -1,5 +1,6 @@
 package phankhanh.book_store.DTO.response;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
@@ -27,11 +28,11 @@ public record ResBookDetailDTO(
         String ageRating,
 
         String status,
-        Long price,
-        Long salePrice,
+        BigDecimal price,
+        BigDecimal salePrice,
         Instant saleStartAt,
         Instant saleEndAt,
-        Long effectivePrice,
+        BigDecimal effectivePrice,
 
         List<BookImageResponse> images,
         Integer stock,
