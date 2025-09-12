@@ -26,8 +26,6 @@ public class Address {
     private String phone;
     @Column(nullable = false, length = 255)
     private String line1;
-    @Column(length = 255)
-    private String line2;
     @Column(nullable = false, length = 100)
     private String ward;
     @Column(nullable = false, length = 100)

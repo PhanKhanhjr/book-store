@@ -8,9 +8,9 @@ import phankhanh.book_store.util.AddressSnapshot;
 public class AddressSnapshotMapper {
 
     // Gộp chuỗi địa chỉ gọn gàng, bỏ null/blank
-    private String joinAddress(String line1, String line2, String ward, String district, String province) {
+    private String joinAddress(String line1,  String ward, String district, String province) {
         String[] parts = new String[] {
-                safe(line1), safe(line2), safe(ward), safe(district), safe(province)
+                safe(line1), safe(ward), safe(district), safe(province)
         };
         StringBuilder sb = new StringBuilder();
         for (String p : parts) {
@@ -31,11 +31,10 @@ public class AddressSnapshotMapper {
         s.setReceiverName(a.getFullName());
         s.setReceiverPhone(a.getPhone());
         s.setLine1(a.getLine1());
-        s.setLine2(a.getLine2());
         s.setWard(a.getWard());
         s.setDistrict(a.getDistrict());
         s.setProvince(a.getProvince());
-        s.setAddressLine(joinAddress(a.getLine1(), a.getLine2(), a.getWard(), a.getDistrict(), a.getProvince()));
+        s.setAddressLine(joinAddress(a.getLine1(), a.getWard(), a.getDistrict(), a.getProvince()));
         // receiverEmail: m không lưu trong Address => để null
         return s;
     }
@@ -47,11 +46,10 @@ public class AddressSnapshotMapper {
         s.setReceiverName(safe(req.receiverName()));
         s.setReceiverPhone(safe(req.receiverPhone()));
         s.setLine1(safe(req.line1()));
-        s.setLine2(safe(req.line2()));
         s.setWard(safe(req.ward()));
         s.setDistrict(safe(req.district()));
         s.setProvince(safe(req.province()));
-        s.setAddressLine(joinAddress(req.line1(), req.line2(), req.ward(), req.district(), req.province()));
+        s.setAddressLine(joinAddress(req.line1(), req.ward(), req.district(), req.province()));
         return s;
     }
 }
