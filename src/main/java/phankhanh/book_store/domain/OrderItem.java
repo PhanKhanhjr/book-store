@@ -24,4 +24,7 @@ public class OrderItem {
     @Column(precision=14, scale=2, nullable=false) private BigDecimal priceSnapshot;
     @Column(nullable=false) private Integer qty;
     @Column(precision=14, scale=2, nullable=false) private BigDecimal lineTotal;
+    @Column(length = 64)  private String skuSnapshot;
+    @Column(length = 500) private String imageUrlSnapshot;
+    @Column(precision=14, scale=2, nullable=false) private BigDecimal discountSnapshot;
 }
