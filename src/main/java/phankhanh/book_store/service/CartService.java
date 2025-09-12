@@ -7,6 +7,8 @@ import phankhanh.book_store.DTO.request.ReqAddItem;
 import phankhanh.book_store.DTO.request.ReqUpdateItem;
 import phankhanh.book_store.DTO.response.ResCartItem;
 import phankhanh.book_store.DTO.response.ResCartSummary;
+import phankhanh.book_store.domain.Book;
+import phankhanh.book_store.domain.BookImage;
 import phankhanh.book_store.domain.Cart;
 import phankhanh.book_store.domain.CartItem;
 import phankhanh.book_store.repository.BookRepository;
@@ -19,7 +21,10 @@ import phankhanh.book_store.util.constant.ProductStatus;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +35,33 @@ public class CartService {
     private final InventoryRepository inventoryRepository;
 
     private static final int MAX_PER_LINE = 99;
+    private static final String THUMB_SUFFIX = "_160x240";
+    private static final java.util.regex.Pattern NAME_EXT_WITH_OPT_SIZE =
+            java.util.regex.Pattern.compile("(?i)(.+?)(?:_\\d+x\\d+)?(\\.(webp|jpe?g|png))$");
+
+    private String withSizeSuffix(String url, String suffix) {
+        if (url == null) return null;
+        int q = url.indexOf('?');
+        String base = (q >= 0) ? url.substring(0, q) : url;
+        String query = (q >= 0) ? url.substring(q) : "";
+
+        var m = NAME_EXT_WITH_OPT_SIZE.matcher(base);
+        if (m.matches()) {
+            return m.group(1) + suffix + m.group(2) + query;
+        }
+        // không match (lạ hiếm gặp) ⇒ trả nguyên
+        return url;
+    }
+
+    // lấy ảnh đầu (sortOrder nhỏ nhất) rồi thêm _160x240
+    private String pickThumbnail(Book book) {
+        if (book.getImages() == null || book.getImages().isEmpty()) return null;
+        String original = book.getImages().stream()
+                .sorted(java.util.Comparator.comparing(img -> img.getSortOrder() == null ? Integer.MAX_VALUE : img.getSortOrder()))
+                .map(BookImage::getUrl)
+                .findFirst().orElse(null);
+        return withSizeSuffix(original, THUMB_SUFFIX);
+    }
 
     @Transactional
     public ResCartSummary addItem(Long userId, ReqAddItem req) {
@@ -108,32 +140,53 @@ public class CartService {
 
     @Transactional(readOnly = true)
     public ResCartSummary getCart(Long userId) {
-        Cart cart = cartRepository.findByUserId(userId).orElseGet(() -> Cart.builder().userId(userId).build());
-        var items = cart.getId() == null ? List.<CartItem>of() : cartItemRepository.findByCart_Id(cart.getId());
+        Cart cart = cartRepository.findByUserId(userId)
+                .orElseGet(() -> Cart.builder().userId(userId).build());
+        var items = (cart.getId() == null)
+                ? java.util.List.<CartItem>of()
+                : cartItemRepository.findByCart_Id(cart.getId());
 
         BigDecimal subtotal = BigDecimal.ZERO;
         int totalItems = 0, totalSelected = 0;
 
-        List<ResCartItem> resItems = new ArrayList<>();
+        java.util.List<ResCartItem> resItems = new java.util.ArrayList<>();
+        var now = java.time.Instant.now();
+
         for (var it : items) {
             var book = bookRepository.findById(it.getBookId()).orElse(null);
             if (book == null) continue;
-            var price = PricingUtil.effectivePrice(book, Instant.now());
-            var line = price.multiply(BigDecimal.valueOf(it.getQty()));
 
+            // giá gốc & giá hiệu lực (đã tính sale window)
+            BigDecimal original = book.getPrice() != null ? book.getPrice() : BigDecimal.ZERO;
+            BigDecimal unit = PricingUtil.effectivePrice(book, now);
+            if (original.signum() > 0 && unit.compareTo(original) > 0) unit = original; // clamp
+            boolean onSale = original.signum() > 0 && unit.compareTo(original) < 0;
+
+            BigDecimal line = unit.multiply(java.math.BigDecimal.valueOf(it.getQty()));
+
+            // tồn kho hiện có
             var inv = inventoryRepository.findByBook_Id(it.getBookId()).orElse(null);
             int available = inv == null ? 0 : inv.getStock();
 
+            // thumbnail: lấy ảnh sortOrder nhỏ nhất (0 là ảnh chính)
+            String thumb = pickThumbnail(book);
+
+            // item
             resItems.add(new ResCartItem(
                     it.getBookId(),
                     book.getTitle(),
                     book.getSlug(),
+                    thumb,
+                    onSale,
                     it.getQty(),
                     it.getSelected(),
-                    price,
+                    original,
+                    unit,
                     line,
                     available
             ));
+
+            // cộng tổng (chỉ tính selected)
             if (Boolean.TRUE.equals(it.getSelected())) {
                 subtotal = subtotal.add(line);
                 totalSelected += it.getQty();
@@ -142,9 +195,10 @@ public class CartService {
         }
 
         BigDecimal discount = BigDecimal.ZERO; // mã giảm giá tính ở /checkout/preview
-        BigDecimal shipping = BigDecimal.ZERO; // xác định ở preview
+        BigDecimal shipping = BigDecimal.ZERO; // tính ở preview
         BigDecimal tax = BigDecimal.ZERO;
         BigDecimal grand = subtotal.subtract(discount).add(shipping).add(tax);
+
         return new ResCartSummary(resItems, subtotal, discount, shipping, tax, grand, totalItems, totalSelected);
     }
 
