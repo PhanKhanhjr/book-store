@@ -26,4 +26,9 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
         """, nativeQuery = true)
     List<Long> findDescendantIdsBySlug(@Param("slug") String slug);
     List<Category> findAllByParentIsNull();
+    @Query("select c from Category c order by c.name asc")
+    List<Category> findAllActive();
+
+    @Query("select c from Category c where c.children is empty order by c.name asc")
+    List<Category> findAllLeafActive();
 }

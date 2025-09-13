@@ -3,6 +3,7 @@ package phankhanh.book_store.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import phankhanh.book_store.DTO.response.ResAuthor;
 import phankhanh.book_store.domain.Author;
 import phankhanh.book_store.repository.AuthorRepository;
 
@@ -19,7 +20,10 @@ public class AuthorController {
         return ResponseEntity.ok(repo.save(req));
     }
     @GetMapping
-    public ResponseEntity<List<Author>> list() {
-        return ResponseEntity.ok(repo.findAll());
+    public ResponseEntity<List<ResAuthor>> list() {
+        var data = repo.findAll().stream()
+                .map(a -> new ResAuthor(a.getId(), a.getName(), a.getSlug()))
+                .toList();
+        return ResponseEntity.ok(data);
     }
 }
