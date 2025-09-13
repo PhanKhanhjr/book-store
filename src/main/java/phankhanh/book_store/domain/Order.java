@@ -79,4 +79,17 @@ public class Order {
     // ITEMS
     @OneToMany(mappedBy="order", cascade=CascadeType.ALL, orphanRemoval=true)
     private List<OrderItem> items = new ArrayList<>();
+
+    //Assignee
+    @Column(name = "assignee_id")
+    private Long assigneeId;
+
+    @Column(name = "assignee_name", length = 100)
+    private String assigneeName;
+    @Column(name = "refund_amount")
+    private BigDecimal refundAmount;
+
+    // thời điểm hoàn tiền xong
+    @Column(name = "refunded_at")
+    private Instant refundedAt;
 }

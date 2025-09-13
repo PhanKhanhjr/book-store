@@ -3,6 +3,7 @@ package phankhanh.book_store.util;
 import lombok.experimental.UtilityClass;
 import phankhanh.book_store.DTO.response.ResOrderDetail;
 import phankhanh.book_store.DTO.response.ResOrderItem;
+import phankhanh.book_store.DTO.response.sale.ResOrderAdmin;
 import phankhanh.book_store.domain.Order;
 import phankhanh.book_store.domain.OrderItem;
 
@@ -57,5 +58,27 @@ public class OrderMapper {
                 i.getLineTotal()
         );
     }
+    public final class OrderAdminMapper {
+        public static ResOrderAdmin toAdmin(Order o) {
+            var addr = o.getShipping();
+            var items = o.getItems().stream()
+                    .map(OrderMapper::toItem)   // <-- tái sử dụng mapper có sẵn
+                    .toList();
+            return new ResOrderAdmin(
+                    o.getId(), o.getCode(),
+                    addr != null ? addr.getReceiverName() : null,
+                    addr != null ? addr.getReceiverPhone() : null,
+                    addr != null ? addr.getReceiverEmail() : null,
+                    addr,
+                    o.getStatus(), o.getPaymentStatus(),
+                    o.getSubtotal(), o.getShippingFee(), o.getDiscountTotal(), o.getTaxTotal(), o.getGrandTotal(),
+                    o.getCreatedAt(), o.getUpdatedAt(),
+                    o.getAssigneeName(), o.getAssigneeId(),
+                    items
+            );
+        }
+    }
+
+
 }
 

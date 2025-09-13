@@ -187,7 +187,7 @@ public final class BookMapper {
 
     // URL thumbnail 160x240 (Firebase Extension pattern: name_WIDTHxHEIGHT.webp)
     private static String toThumbUrl(String originalUrl) {
-        return withSize(originalUrl, 160, 240);
+        return withSize(originalUrl, 320, 480);
     }
 
     // Map 1 BookImage -> BookImageResponse (có variants)
