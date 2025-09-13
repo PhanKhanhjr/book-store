@@ -48,5 +48,18 @@ public class CategoryController {
                 .toList();
         return ResponseEntity.ok(data);
     }
+    @GetMapping("/flat/leaf")
+    public ResponseEntity<List<ResCategoryFlat>> getFlatLeaf() {
+        var data = categoryRepository.findAllLeafActive().stream()
+                .map(c -> new ResCategoryFlat(
+                        c.getId(),
+                        c.getName(),
+                        c.getSlug(),
+                        c.getParent() != null ? c.getParent().getId() : null,
+                        true
+                ))
+                .toList();
+        return ResponseEntity.ok(data);
+    }
 }
 
