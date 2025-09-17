@@ -22,10 +22,8 @@ import phankhanh.book_store.util.constant.PaymentStatus;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
+import java.util.function.Function;
 
 @Service
 @RequiredArgsConstructor
@@ -33,7 +31,7 @@ public class SaleOrderService {
     private final OrderRepository orderRepo;
     private final InventoryRepository inventoryRepo;
 
-    // ========== SALE APIs ==========
+    // -------------------- QUERY (SALE) --------------------
     private Specification<Order> specForSale(String q, OrderStatus status, PaymentStatus paymentStatus,
                                              Instant from, Instant to) {
         return (root, cq, cb) -> {
@@ -41,7 +39,6 @@ public class SaleOrderService {
 
             if (q != null && !q.isBlank()) {
                 String like = "%" + q.trim().toLowerCase(Locale.ROOT) + "%";
-                // code / tên / phone / email trong AddressSnapshot (Embeddable)
                 ps.add(cb.or(
                         cb.like(cb.lower(root.get("code")), like),
                         cb.like(cb.lower(root.get("shipping").get("receiverName")), like),
@@ -49,10 +46,10 @@ public class SaleOrderService {
                         cb.like(cb.lower(root.get("shipping").get("receiverEmail")), like)
                 ));
             }
-            if (status != null) ps.add(cb.equal(root.get("status"), status));
+            if (status != null)        ps.add(cb.equal(root.get("status"), status));
             if (paymentStatus != null) ps.add(cb.equal(root.get("paymentStatus"), paymentStatus));
-            if (from != null) ps.add(cb.greaterThanOrEqualTo(root.get("createdAt"), from));
-            if (to != null)   ps.add(cb.lessThan(root.get("createdAt"), to));
+            if (from != null)          ps.add(cb.greaterThanOrEqualTo(root.get("createdAt"), from));
+            if (to != null)            ps.add(cb.lessThan(root.get("createdAt"), to));
 
             cq.orderBy(cb.desc(root.get("createdAt")));
             return cb.and(ps.toArray(Predicate[]::new));
@@ -63,8 +60,8 @@ public class SaleOrderService {
             String q, OrderStatus status, PaymentStatus paymentStatus,
             Instant from, Instant to, Pageable pageable
     ) {
-        var spec = specForSale(q, status, paymentStatus, from, to);
-        return orderRepo.findAll(spec, pageable).map(OrderMapper.OrderAdminMapper::toAdmin);
+        return orderRepo.findAll(specForSale(q, status, paymentStatus, from, to), pageable)
+                .map(OrderMapper.OrderAdminMapper::toAdmin);
     }
 
     public ResOrderAdmin getAdminView(Long id) {
@@ -72,72 +69,107 @@ public class SaleOrderService {
         return OrderMapper.OrderAdminMapper.toAdmin(o);
     }
 
+    // -------------------- STATUS FLOW --------------------
+    /**
+     * Flow hợp lệ:
+     * PENDING -> CONFIRMED -> PROCESSING -> SHIPPED -> DELIVERED
+     *             \__________________________________________/  (bỏ qua PROCESSING nếu shop không cần)
+     * Mọi trạng thái trước SHIPPED có thể -> CANCELED (nếu chưa thanh toán hoặc đã hoàn tiền).
+     */
+    private static final Map<OrderStatus, Set<OrderStatus>> ALLOWED = Map.of(
+            OrderStatus.PENDING,   EnumSet.of(OrderStatus.CONFIRMED, OrderStatus.CANCELED),
+            OrderStatus.CONFIRMED, EnumSet.of(OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.CANCELED),
+            OrderStatus.PROCESSING,EnumSet.of(OrderStatus.SHIPPED, OrderStatus.CANCELED),
+            OrderStatus.SHIPPED,   EnumSet.of(OrderStatus.DELIVERED),
+            OrderStatus.DELIVERED, EnumSet.noneOf(OrderStatus.class),
+            OrderStatus.CANCELED,  EnumSet.noneOf(OrderStatus.class)
+    );
+
+    private boolean isAllowedTransition(OrderStatus from, OrderStatus to) {
+        return ALLOWED.getOrDefault(from, Set.of()).contains(to);
+    }
+
     @Transactional
     public ResOrderAdmin updateStatusBySale(Long id, ReqUpdateOrderStatus req, Long actorId) {
         Order o = orderRepo.findById(id).orElseThrow(() -> new IllegalArgumentException("Order not found"));
         OrderStatus to = OrderStatus.valueOf(req.status());
 
+        // Guard: transition hợp lệ?
         if (!isAllowedTransition(o.getStatus(), to)) {
             throw new IllegalStateException("Invalid status transition: " + o.getStatus() + " -> " + to);
         }
-        // Guard: không cho ship khi chưa PACKING
-        if (to == OrderStatus.SHIPPED && o.getStatus() != OrderStatus.PACKING) {
-            throw new IllegalStateException("Must be PACKING before SHIPPED");
-        }
-        // Guard: không cho delivered khi chưa shipped
-        if (to == OrderStatus.DELIVERED && o.getStatus() != OrderStatus.SHIPPED) {
-            throw new IllegalStateException("Must be SHIPPED before DELIVERED");
+        // Guard: không cho SHIPPED nếu chưa có thông tin giao vận tối thiểu (tuỳ entity của m)
+        if (to == OrderStatus.SHIPPED) {
+            // ví dụ: phải đã có shippingFee hoặc shippedAt
+            if (o.getShippingFee() == null) {
+                throw new IllegalStateException("Shipping info is required before marking SHIPPED");
+            }
+            if (o.getPaymentStatus() == PaymentStatus.UNPAID) {
+                // nếu shop yêu cầu chỉ ship sau khi thanh toán
+                throw new IllegalStateException("Order must be PAID before SHIPPED");
+            }
         }
 
         o.setStatus(to);
+        if (to == OrderStatus.DELIVERED && o.getPaidAt() == null && o.getPaymentStatus() == PaymentStatus.PAID) {
+            // trường hợp COD đã thu tiền khi giao xong (nếu có cơ chế COD_PAID)
+            o.setPaidAt(Instant.now());
+            o.setPaymentStatus(PaymentStatus.PAID);
+        }
         o.setUpdatedAt(Instant.now());
         // saveHistory(o, actorId, "STATUS_CHANGE", req.note());
         return OrderMapper.OrderAdminMapper.toAdmin(o);
     }
 
+    // -------------------- PAYMENT --------------------
     @Transactional
     public ResOrderAdmin updatePaymentBySale(Long id, ReqUpdatePayment req, Long actorId) {
         Order o = orderRepo.findById(id).orElseThrow(() -> new IllegalArgumentException("Order not found"));
         PaymentStatus to = PaymentStatus.valueOf(req.paymentStatus());
 
-        // Guard cơ bản
+        // Guard căn bản & trình tự refund
         if (to == PaymentStatus.PAID) {
-            if (!(o.getStatus().ordinal() >= OrderStatus.CONFIRMED.ordinal())) {
-                throw new IllegalStateException("Order must be CONFIRMED before marked PAID");
+            if (!(o.getStatus() == OrderStatus.CONFIRMED || o.getStatus() == OrderStatus.PROCESSING)) {
+                throw new IllegalStateException("Order must be CONFIRMED/PROCESSING before marked PAID");
             }
         }
         if (to == PaymentStatus.REFUND_PENDING && o.getPaymentStatus() != PaymentStatus.PAID) {
-            throw new IllegalStateException("Only PAID orders can be moved to REFUND_PENDING");
+            throw new IllegalStateException("Only PAID orders can move to REFUND_PENDING");
         }
         if (to == PaymentStatus.REFUNDED && o.getPaymentStatus() != PaymentStatus.REFUND_PENDING) {
             throw new IllegalStateException("Must be REFUND_PENDING before REFUNDED");
         }
 
         o.setPaymentStatus(to);
-        if (req.paidAt() != null && to == PaymentStatus.PAID) {
-            o.setPaidAt(req.paidAt());
+        if (to == PaymentStatus.PAID) {
+            o.setPaidAt(req.paidAt() != null ? req.paidAt() : Instant.now());
+            // nếu đang PENDING mà được thanh toán, tự động CONFIRMED (tuỳ business)
+            if (o.getStatus() == OrderStatus.PENDING) {
+                o.setStatus(OrderStatus.CONFIRMED);
+            }
         }
         o.setUpdatedAt(Instant.now());
         // saveHistory(o, actorId, "PAYMENT_UPDATE", req.note());
         return OrderMapper.OrderAdminMapper.toAdmin(o);
     }
 
+    // -------------------- SHIPPING (Sale nhập thông tin vận chuyển) --------------------
     @Transactional
     public ResOrderAdmin updateShippingBySale(Long id, ReqUpdateShipping req, Long actorId) {
         Order o = orderRepo.findById(id).orElseThrow(() -> new IllegalArgumentException("Order not found"));
 
-        // Nếu entity chưa có 3 field này thì thêm vào Order:
-        // private String shippingCarrier; private String shippingTrackingCode; private Instant shippedAt;
-        if (req.shippedAt() != null) o.setShippedAt(req.shippedAt());
-        if (req.fee() != null) o.setShippingFee(req.fee());
-        if (o.getStatus() == OrderStatus.PACKING) {
-            o.setStatus(OrderStatus.SHIPPED);
-        }
+        // update thông tin shipping (nếu entity có các field này)
+        if (req.shippedAt() != null)       o.setShippedAt(req.shippedAt());
+        if (req.fee() != null)             o.setShippingFee(req.fee());
+        if (req.shippingCarrier() != null) o.setShippingCarrier(req.shippingCarrier());
+        if (req.trackingCode() != null)    o.setShippingTrackingCode(req.trackingCode());
+
+        // KHÔNG tự đổi status ở đây — chuyển trạng thái dùng API updateStatusBySale()
         o.setUpdatedAt(Instant.now());
-        // saveHistory(o, actorId, "SHIPPING_UPDATE", null);
         return OrderMapper.OrderAdminMapper.toAdmin(o);
     }
 
+    // -------------------- ASSIGN / NOTE --------------------
     @Transactional
     public ResOrderAdmin assignOrder(Long id, Long assigneeId, Long actorId) {
         Order o = orderRepo.findById(id).orElseThrow(() -> new IllegalArgumentException("Order not found"));
@@ -150,22 +182,26 @@ public class SaleOrderService {
 
     @Transactional
     public void addInternalNote(Long id, Long actorId, String note) {
-        Order o = orderRepo.findById(id).orElseThrow(() -> new IllegalArgumentException("Order not found"));
-        // Nếu chưa có bảng notes, tạm thời ghi vào history
+        orderRepo.findById(id).orElseThrow(() -> new IllegalArgumentException("Order not found"));
         // saveHistory(o, actorId, "NOTE", note);
     }
 
+    // -------------------- CANCEL / REFUND --------------------
     @Transactional
     public ResOrderAdmin cancelBySale(Long id, String reason, Long actorId) {
         Order o = orderRepo.findById(id).orElseThrow(() -> new IllegalArgumentException("Order not found"));
-        if (!(o.getStatus() == OrderStatus.NEW || o.getStatus() == OrderStatus.PENDING || o.getStatus() == OrderStatus.CONFIRMED)) {
-            throw new IllegalStateException("Only NEW/PENDING/CONFIRMED can be cancelled");
+
+        // Chỉ cho huỷ khi chưa SHIPPED
+        if (o.getStatus() == OrderStatus.SHIPPED || o.getStatus() == OrderStatus.DELIVERED) {
+            throw new IllegalStateException("Cannot cancel after shipped");
         }
+        // Nếu đã paid thì không cho huỷ trực tiếp (phải đi flow refund)
         if (o.getPaymentStatus() == PaymentStatus.PAID) {
             throw new IllegalStateException("Paid order requires refund before cancel");
         }
+
         o.setStatus(OrderStatus.CANCELED);
-        restockStocks(o); // hoàn tồn
+        restockStocks(o);
         o.setUpdatedAt(Instant.now());
         // saveHistory(o, actorId, "CANCEL", reason);
         return OrderMapper.OrderAdminMapper.toAdmin(o);
@@ -185,21 +221,9 @@ public class SaleOrderService {
         return OrderMapper.OrderAdminMapper.toAdmin(o);
     }
 
-// ========== Helpers ==========
-
-    private boolean isAllowedTransition(OrderStatus from, OrderStatus to) {
-        // Cấu hình nhanh các bước forward + hủy
-        return switch (from) {
-            case NEW, PENDING -> EnumSet.of(OrderStatus.CONFIRMED, OrderStatus.CANCELED).contains(to);
-            case CONFIRMED -> EnumSet.of(OrderStatus.PACKING, OrderStatus.CANCELED).contains(to);
-            case PACKING -> EnumSet.of(OrderStatus.SHIPPED, OrderStatus.CANCELED).contains(to);
-            case SHIPPED -> EnumSet.of(OrderStatus.DELIVERED).contains(to);
-            case DELIVERED, CANCELED -> false; // đã chốt
-            default -> false;
-        };
-    }
-
+    // -------------------- Helpers --------------------
     private void restockStocks(Order o) {
+        // hoàn tồn kho khi hủy
         for (OrderItem it : o.getItems()) {
             Inventory inv = inventoryRepo.findByBookIdForUpdate(it.getBookId())
                     .orElseThrow(() -> new IllegalStateException("Inventory not found for book: " + it.getBookId()));

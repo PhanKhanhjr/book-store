@@ -86,7 +86,7 @@ public class OrderService {
         Order order = new Order();
         order.setCode(generateOrderCode());
         order.setUser(User.builder().id(userId).build()); // set id, tránh load User
-        order.setStatus(OrderStatus.NEW);
+        order.setStatus(OrderStatus.PENDING);
         order.setPaymentMethod(req.paymentMethod());
         order.setPaymentStatus(
                 req.paymentMethod().name().equals("COD") ? PaymentStatus.UNPAID : PaymentStatus.PENDING

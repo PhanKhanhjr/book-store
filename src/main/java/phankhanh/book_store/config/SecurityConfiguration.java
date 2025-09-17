@@ -39,7 +39,8 @@ public class SecurityConfiguration {
             "/api/v1/auth/**",
             "/api/v1/books/**",
             "/public/**",
-            "/"
+            "/",
+            "/api/v1/payments/vnpay/**"
     };
 
     @Bean
@@ -51,7 +52,7 @@ public class SecurityConfiguration {
                         authz -> authz
                                 .requestMatchers("api/v1/admin/**").hasRole("ADMIN")
                                 .requestMatchers(WHITELIST).permitAll()
-                                .anyRequest().authenticated()
+                                .anyRequest().permitAll()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter()))

@@ -92,4 +92,11 @@ public class Order {
     // thời điểm hoàn tiền xong
     @Column(name = "refunded_at")
     private Instant refundedAt;
+
+    @Column(name = "shipping_carrier", length = 100)
+    private String shippingCarrier;
+
+    @Column(name = "shipping_tracking_code", length = 100)
+    private String shippingTrackingCode;
+
 }
