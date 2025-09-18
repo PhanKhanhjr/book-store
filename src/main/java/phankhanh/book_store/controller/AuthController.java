@@ -68,17 +68,6 @@ public class AuthController {
                 .body(resLoginDTO);
     }
 
-//    @PostMapping("/register")
-//    public ResponseEntity<String> register(@Valid @RequestBody ReqRegister reqRegister) {
-//        this.authService.register(
-//                reqRegister.email(),
-//                reqRegister.password(),
-//                reqRegister.fullName(),
-//                reqRegister.userName(),
-//                reqRegister.phone()
-//        );
-//        return ResponseEntity.ok().body("Register successfully");
-//    }
     @PostMapping("/register")
     public ResponseEntity<?> registerStart(@Valid @RequestBody ReqRegister req) {
         otpService.startRegister(req.email(), req.password(),req.username(), req.fullName(),  req.phone());

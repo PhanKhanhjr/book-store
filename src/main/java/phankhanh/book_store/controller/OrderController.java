@@ -8,6 +8,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+import phankhanh.book_store.DTO.request.ReqCancelOrder;
 import phankhanh.book_store.DTO.request.ReqCreateOrder;
 import phankhanh.book_store.DTO.response.ResOrderCreated;
 import phankhanh.book_store.DTO.response.ResOrderDetail;
@@ -46,7 +47,13 @@ public class OrderController {
         return orderService.listMyOrders(userId, PageRequest.of(page, size));
     }
 
-    // --- helper ---
+    @PostMapping("/{code}/cancel")
+    public ResOrderDetail cancel(@PathVariable String code,
+                                 @AuthenticationPrincipal(expression = "claims['userId']") Long userId,
+                                 @Valid @RequestBody ReqCancelOrder req) {
+        return orderService.userCancelOrder(code, userId, req.reason());
+    }
+
     private Long extractUserId(Jwt jwt) {
         Object claim = jwt.getClaim("userId");
         if (claim instanceof Integer i) return i.longValue();

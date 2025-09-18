@@ -5,10 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import phankhanh.book_store.util.AddressSnapshot;
-import phankhanh.book_store.util.constant.DeliveryMethod;
-import phankhanh.book_store.util.constant.OrderStatus;
-import phankhanh.book_store.util.constant.PaymentMethod;
-import phankhanh.book_store.util.constant.PaymentStatus;
+import phankhanh.book_store.util.constant.*;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -30,7 +27,7 @@ public class Order {
     private Long id;
 
     @Column(length = 20, nullable = false)
-    private String code; // ví dụ BK250912-000123
+    private String code;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = true) // optional=false nếu bắt buộc có user
     @JoinColumn(name = "user_id",
@@ -86,12 +83,17 @@ public class Order {
 
     @Column(name = "assignee_name", length = 100)
     private String assigneeName;
+    private String cancelReason;
+    private Instant cancelRequestedAt;
+    private Long cancelRequestedBy;
     @Column(name = "refund_amount")
     private BigDecimal refundAmount;
 
     // thời điểm hoàn tiền xong
     @Column(name = "refunded_at")
     private Instant refundedAt;
+    @Enumerated(EnumType.STRING)
+    private RefundMethod refundMethod;
 
     @Column(name = "shipping_carrier", length = 100)
     private String shippingCarrier;

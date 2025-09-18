@@ -1,5 +1,6 @@
 package phankhanh.book_store.repository;
 
+import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -19,6 +20,7 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
     Page<User> findAll(Specification<User> spec, Pageable pageable);
 
     @Modifying
+    @Transactional
     @Query("update User u set u.enabled=false, u.deletedAt=:now where u.id=:id and u.deletedAt is null")
     int softDelete(@Param("id") Long id, @Param("now") Instant now);
 }

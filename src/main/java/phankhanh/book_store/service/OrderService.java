@@ -1,5 +1,6 @@
 package phankhanh.book_store.service;
 
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -205,4 +206,46 @@ public class OrderService {
         return orderRepo.findByUserIdOrderByCreatedAtDesc(userId, pageable)
                 .map(OrderMapper::toDetail);
     }
+    @Transactional
+    public ResOrderDetail userCancelOrder(String code, Long userId, String reason) {
+        Order o = orderRepo.findByCode(code)
+                .orElseThrow(() -> new EntityNotFoundException("Order not found"));
+
+        if (!o.getUser().getId().equals(userId)) {
+            throw new IllegalArgumentException("Not your order");
+        }
+
+        if (o.getStatus() == OrderStatus.PENDING || o.getStatus() == OrderStatus.PROCESSING) {
+            if (o.getPaymentStatus() == PaymentStatus.UNPAID) {
+                // hủy trực tiếp
+                o.setStatus(OrderStatus.CANCELED);
+                o.setCanceledAt(Instant.now());
+                o.setCancelReason(reason);
+
+                if (o.getStatus() == OrderStatus.PROCESSING) {
+                    restockItemsOnce(o);
+                }
+
+            } else if (o.getPaymentStatus() == PaymentStatus.PAID) {
+                o.setStatus(OrderStatus.CANCEL_REQUESTED);
+                o.setCancelReason(reason);
+                o.setCancelRequestedAt(Instant.now());
+                o.setCancelRequestedBy(userId);
+            }
+        } else {
+            throw new IllegalStateException("Cannot cancel order in current status");
+        }
+
+        orderRepo.save(o);
+        return OrderMapper.toDetail(o);
+    }
+
+    private void restockItemsOnce(Order o) {
+        for (OrderItem it : o.getItems()) {
+            Inventory inv = inventoryRepo.findByBook_Id(it.getBookId())
+                    .orElseThrow(() -> new IllegalStateException("Inventory not found for book " + it.getBookId()));
+            inv.setStock(inv.getStock() + it.getQty());
+        }
+    }
+
 }

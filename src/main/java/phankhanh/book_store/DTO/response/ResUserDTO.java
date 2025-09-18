@@ -11,7 +11,7 @@ public record ResUserDTO (
         String phone,
         LocalDate birthDate,
         String gender,       // FEMALE / MALE / OTHER
-        String role,     // ROLE_USER / ROLE_ADMIN
+        String role,// ROLE_USER / ROLE_ADMIN
         Instant createdAt,
         Instant updatedAt
 ) {}
