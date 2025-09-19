@@ -5,6 +5,7 @@ import com.nimbusds.jose.util.Base64;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -40,7 +41,14 @@ public class SecurityConfiguration {
             "/api/v1/books/**",
             "/public/**",
             "/",
-            "/api/v1/payments/vnpay/**"
+            "/api/v1/payments/vnpay/**",
+            "/api/v1/categories/**",
+            "/api/v1/authors/**",
+            "/api/v1/publishers/**",
+            "/api/v1/suppliers/**",
+            "/api/v1/home/**",
+            "/api/v1/search/**",
+
     };
 
     @Bean
@@ -52,7 +60,8 @@ public class SecurityConfiguration {
                         authz -> authz
                                 .requestMatchers("api/v1/admin/**").hasRole("ADMIN")
                                 .requestMatchers(WHITELIST).permitAll()
-                                .anyRequest().permitAll()
+                                .requestMatchers(HttpMethod.GET,"/api/v1/books/*/comments").permitAll()
+                                .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter()))
