@@ -111,4 +111,7 @@ public class Book {
 
     @Column(nullable = false)
     private boolean deleted = false;
+
+    @Column(nullable = false) private Integer ratingCount = 0;
+    @Column(nullable = false, precision = 3, scale = 2) private BigDecimal ratingAvg = BigDecimal.ZERO;
 }
