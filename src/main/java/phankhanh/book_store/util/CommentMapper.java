@@ -9,7 +9,7 @@ public final class CommentMapper {
     private CommentMapper() {}
 
     public static ResComment toDto(Comment c, List<ResComment> children,
-                                   String userName, String userAvatar) {
+                                   String userName, String userAvatar,Integer likeCount, Boolean likedByMe) {
         return new ResComment(
                 c.getId(),
                 c.getUser().getId(),
@@ -20,6 +20,8 @@ public final class CommentMapper {
                 c.getUpdatedAt(),
                 c.getParent() == null ? null : c.getParent().getId(),
                 c.getStatus().name(),
+                likeCount == null ? c.getLikeCount() : likeCount,
+                likedByMe,
                 children
         );
     }

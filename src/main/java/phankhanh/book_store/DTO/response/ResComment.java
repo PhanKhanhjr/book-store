@@ -13,5 +13,7 @@ public record ResComment(
         Instant updatedAt,
         Long parentId,
         String status,
+        Integer likeCount,
+        Boolean likedByMe,
         List<ResComment> children
 ) {}

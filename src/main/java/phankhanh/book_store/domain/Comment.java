@@ -2,7 +2,6 @@ package phankhanh.book_store.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.checkerframework.checker.units.qual.N;
 import phankhanh.book_store.util.constant.CommentStatus;
 
 import java.time.Instant;
@@ -40,6 +39,9 @@ public class Comment {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private CommentStatus status;
+
+    @Column(nullable = false)
+    private Integer likeCount = 0;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;

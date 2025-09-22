@@ -41,8 +41,11 @@ public class CommentController {
         var direction = "old".equalsIgnoreCase(sort) ? Sort.Direction.ASC : Sort.Direction.DESC;
         var pageable = PageRequest.of(page, size, Sort.by(direction, "createdAt"));
         boolean admin = jwt != null && isAdmin(jwt);
-        return ResponseEntity.ok(service.listByBook(bookId, pageable, includeHidden, admin));
+        Long userId = jwt == null ? null : currentUserId(jwt);
+
+        return ResponseEntity.ok(service.listByBook(bookId, pageable, includeHidden, admin, userId));
     }
+
 
     @PostMapping("/books/{bookId}/comments")
     public ResponseEntity<ResComment> create(
@@ -77,6 +80,18 @@ public class CommentController {
             @RequestParam boolean hide
     ) {
         service.hideOrUnhide(id, hide);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("comment/{id}/like")
+    public ResponseEntity<Void> like(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {
+        service.like(id, currentUserId(jwt));
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("comment/{id}/like")
+    public ResponseEntity<Void> unlike(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {
+        service.unlike(id, currentUserId(jwt));
         return ResponseEntity.noContent().build();
     }
 }
