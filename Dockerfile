@@ -1,5 +1,5 @@
 # ---- Build stage ----
-FROM gradle:8.10.2-jdk-21 AS build
+FROM gradle:8.10.2-jdk17 AS build
 WORKDIR /workspace
 
 # Copy source vào container
@@ -9,7 +9,7 @@ COPY . .
 RUN ./gradlew --no-daemon clean bootJar -x test
 
 # ---- Runtime stage ----
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:17-jre
 WORKDIR /app
 
 # Tạo user không phải root để chạy app
