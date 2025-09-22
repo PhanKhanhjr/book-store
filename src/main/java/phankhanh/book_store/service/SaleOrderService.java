@@ -76,7 +76,8 @@ public class SaleOrderService {
             OrderStatus.CONFIRMED,  EnumSet.of(OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.CANCELED),
             OrderStatus.PROCESSING, EnumSet.of(OrderStatus.SHIPPED, OrderStatus.CANCELED),
             OrderStatus.SHIPPED,    EnumSet.of(OrderStatus.DELIVERED),
-            OrderStatus.DELIVERED,  EnumSet.noneOf(OrderStatus.class),
+            OrderStatus.DELIVERED,  EnumSet.of(OrderStatus.COMPLETED),
+            OrderStatus.COMPLETED,  EnumSet.noneOf(OrderStatus.class),
             OrderStatus.CANCELED,   EnumSet.noneOf(OrderStatus.class)
     );
 
@@ -90,17 +91,24 @@ public class SaleOrderService {
                 .orElseThrow(() -> new IllegalArgumentException("Order not found"));
         OrderStatus from = o.getStatus();
         OrderStatus to   = OrderStatus.valueOf(req.status());
-
         if (!isAllowedTransition(from, to)) {
             throw new IllegalStateException("Invalid status transition: " + from + " -> " + to);
         }
-
         if (to == OrderStatus.SHIPPED) {
             if (o.getShippingFee() == null) {
                 throw new IllegalStateException("Shipping info is required before marking SHIPPED");
             }
             if (o.getShippedAt() == null) {
                 o.setShippedAt(Instant.now());
+            }
+        }
+        //COMPLETED chỉ cho khi đã thanh toán
+        if (to == OrderStatus.COMPLETED) {
+            if (o.getPaymentStatus() != PaymentStatus.PAID) {
+                throw new IllegalStateException("Order must be PAID before COMPLETED");
+            }
+            if (o.getCompletedAt() == null) {
+                o.setCompletedAt(Instant.now());
             }
         }
 
@@ -120,14 +128,13 @@ public class SaleOrderService {
         }
 
         if (to == OrderStatus.CANCELED && from != OrderStatus.CANCELED) {
-            if (o.getShippedAt() == null) { // chưa giao đi thì mới cộng lại stock
+            if (o.getShippedAt() == null) {
                 restockItemsOnce(o);
             }
         }
-
-        // saveHistory(o, actorId, "STATUS_CHANGE", req.note());
         return OrderMapper.OrderAdminMapper.toAdmin(o);
     }
+
 
     private void commitSoldOnce(Order o) {
         for (OrderItem it : o.getItems()) {
