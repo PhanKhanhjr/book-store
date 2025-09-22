@@ -20,7 +20,7 @@ USER appuser
 COPY --from=build /workspace/build/libs/*.jar /app/app.jar
 
 EXPOSE 8080
-
+i
 # Tối ưu JVM trong container
 ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75.0 -Dfile.encoding=UTF-8" \
     SPRING_PROFILES_ACTIVE=prod
