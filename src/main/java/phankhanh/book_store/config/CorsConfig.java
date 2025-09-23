@@ -17,7 +17,9 @@ public class CorsConfig {
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:3000",
                 "http://localhost:4173",
-                "http://localhost:5173"
+                "http://localhost:5173",
+                "https://app.inkverse.site",
+                "https://inkverse.site"
 
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"));
