@@ -14,7 +14,7 @@ import phankhanh.book_store.service.CategoryService;
 import java.util.List;
 
 @RestController
-@RequestMapping("api/v1")
+@RequestMapping("/api/v1")
 @RequiredArgsConstructor
 public class CategoryController {
     private final CategoryService categoryService;

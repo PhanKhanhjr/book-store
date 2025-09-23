@@ -1,5 +1,6 @@
 package phankhanh.book_store.controller;
 
+import jakarta.annotation.security.PermitAll;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpCookie;
@@ -73,7 +74,7 @@ public class AuthController {
         otpService.startRegister(req.email(), req.password(),req.username(), req.fullName(),  req.phone());
     return ResponseEntity.ok(Map.of("message", "OTP sent to email"));
 }
-
+    @PermitAll
     @PostMapping("/verify-email")
     public ResponseEntity<?> verify(@Valid @RequestBody ReqVerifyEmail req){
         Long id = otpService.verifyRegister(req.email(), req.otp(), req.password(), req.username(),req.fullName(),  req.phone());

@@ -61,8 +61,9 @@ public class SecurityConfiguration {
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/verify-email").permitAll()
+                        .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
-                        // public endpoints
                         .requestMatchers(WHITELIST).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/books/*/comments").permitAll()
                         .anyRequest().authenticated()
