@@ -48,29 +48,35 @@ public class SecurityConfiguration {
             "/api/v1/suppliers/**",
             "/api/v1/home/**",
             "/api/v1/search/**",
+            "/api/v1/comments/**",
     };
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, CustomAuthenticationEntryPoint customAuthenticationEntryPoint) throws Exception {
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            CustomAuthenticationEntryPoint entryPoint) throws Exception {
+
         http
-                .csrf(csfr -> csfr.disable())
+                .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
-                .authorizeHttpRequests(
-                        authz -> authz
-                                .requestMatchers("api/v1/admin/**").hasRole("ADMIN")
-                                .requestMatchers(WHITELIST).permitAll()
-                                .requestMatchers(HttpMethod.GET,"/api/v1/books/*/comments").permitAll()
-                                .anyRequest().authenticated()
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                        // public endpoints
+                        .requestMatchers(WHITELIST).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/books/*/comments").permitAll()
+                        .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter()))
-                        .authenticationEntryPoint(customAuthenticationEntryPoint)
+                        .authenticationEntryPoint(entryPoint)
                 )
-
                 .formLogin(f -> f.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+
         return http.build();
     }
+
 
     @Value("${phankhanh.jwt.base64-secret}")
     private String jwtSecret;
