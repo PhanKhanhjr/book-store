@@ -48,7 +48,6 @@ public class SecurityConfiguration {
             "/api/v1/suppliers/**",
             "/api/v1/home/**",
             "/api/v1/search/**",
-
     };
 
     @Bean

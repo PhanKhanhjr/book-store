@@ -205,8 +205,9 @@ public class BookRepositoryImpl implements BookRepositoryCustom {
 
         var discountRate = Expressions.numberTemplate(Double.class,
                 "CASE WHEN {0} IS NULL OR {0}=0 THEN 0 " +
-                        "ELSE (({0}-{1})::double precision/{0}) END",
+                        "ELSE (({0}-{1}) * 1.0 / {0}) END",
                 book.price, book.salePrice);
+
 
         return queryFactory.selectFrom(book)
                 .where(where)

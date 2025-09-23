@@ -14,13 +14,13 @@ import phankhanh.book_store.service.CategoryService;
 import java.util.List;
 
 @RestController
-@RequestMapping("api/v1/admin/categories")
+@RequestMapping("api/v1")
 @RequiredArgsConstructor
 public class CategoryController {
     private final CategoryService categoryService;
     private final CategoryRepository categoryRepository;
 
-    @PostMapping
+    @PostMapping("/admin/categories")
     public ResponseEntity<CategoryDTO> create(@RequestBody ReqCategoryCreate req) {
         return ResponseEntity.ok(categoryService.create(req));
     }
@@ -30,12 +30,12 @@ public class CategoryController {
         return new ResCategoryTreeDTO(c.getId(), c.getName(), c.getSlug(), kids);
     }
 
-    @GetMapping()
+    @GetMapping("/categories/tree")
     public List<ResCategoryTreeDTO> tree() {
         var roots = categoryRepository.findAllByParentIsNull(); // viết repo method này
         return roots.stream().map(this::toTreeDTO).toList();
     }
-    @GetMapping("/flat")
+    @GetMapping("/categories/flat")
     public ResponseEntity<List<ResCategoryFlat>> getFlatAll() {
         var data = categoryRepository.findAllActive().stream()
                 .map(c -> new ResCategoryFlat(
@@ -48,7 +48,7 @@ public class CategoryController {
                 .toList();
         return ResponseEntity.ok(data);
     }
-    @GetMapping("/flat/leaf")
+    @GetMapping("/categories/flat/leaf")
     public ResponseEntity<List<ResCategoryFlat>> getFlatLeaf() {
         var data = categoryRepository.findAllLeafActive().stream()
                 .map(c -> new ResCategoryFlat(
