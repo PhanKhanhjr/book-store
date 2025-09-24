@@ -234,7 +234,6 @@ public class BookService {
 
         Specification<Book> spec = BookSpecifications.notDeleted()
                     .and(BookSpecifications.hasAnyCategoryIds(categoryIds))
-//                    .and(BookSpecifications.hasCategory(category))
                     .and(BookSpecifications.hasPublisher(publisher))
                     .and(BookSpecifications.hasSupplier(supplier))
                     .and(BookSpecifications.hasLanguage(language))

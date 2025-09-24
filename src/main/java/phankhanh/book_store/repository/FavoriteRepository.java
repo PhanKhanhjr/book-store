@@ -30,5 +30,6 @@ public interface FavoriteRepository extends JpaRepository<Favorite, Long> {
 """)
     Page<ResBookFavoriteDTO> findFavoriteBooksByUser(Long userId, Pageable pageable);
     long countByBook_Id(Long bookId);
+    boolean existsByUser_IdAndBook_Id(Long userId, Long bookId);
 }
 

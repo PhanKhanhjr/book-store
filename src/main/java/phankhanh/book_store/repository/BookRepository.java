@@ -46,4 +46,6 @@ public interface BookRepository extends JpaRepository<Book, Long>, BookRepositor
     Page<Book> findByEffectivePriceBetween(@Param("min") long min,
                                            @Param("max") long max,
                                            Pageable pageable);
+    @Query("select b.id from Book b where b.slug = :slug and b.deleted = false")
+    Optional<Long> findIdBySlug(String slug);
 }

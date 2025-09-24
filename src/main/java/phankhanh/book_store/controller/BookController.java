@@ -3,15 +3,21 @@ package phankhanh.book_store.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import phankhanh.book_store.DTO.request.ReqBookCreate;
 import phankhanh.book_store.DTO.request.ReqBookUpdate;
 import phankhanh.book_store.DTO.response.ResBookDetailDTO;
 import phankhanh.book_store.DTO.response.ResBookListItemDTO;
 import phankhanh.book_store.DTO.response.ResHomeFeedDTO;
 import phankhanh.book_store.domain.Book;
+import phankhanh.book_store.repository.BookRepository;
+import phankhanh.book_store.repository.FavoriteRepository;
 import phankhanh.book_store.service.BookService;
 import phankhanh.book_store.util.BookMapper;
 import phankhanh.book_store.util.constant.AgeRating;
@@ -19,12 +25,15 @@ import phankhanh.book_store.util.constant.Language;
 import phankhanh.book_store.util.constant.ProductStatus;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 @RequestMapping("/api/v1")
 @RestController
 @RequiredArgsConstructor
 public class BookController {
     private final BookService bookService;
+    private final BookRepository bookRepository;
+    private final FavoriteRepository favoriteRepository;
 
     /* ===== PUBLIC: LIST (KHÔNG SEARCH) ===== */
     @GetMapping("/books")
@@ -90,6 +99,23 @@ public class BookController {
         var data = bookService.getBySlug(slug);
         return ResponseEntity.ok(data);
     }
+
+    @GetMapping("/books/{slug}/favorite-meta")
+    public Map<String, Object> favoriteMeta(
+            @PathVariable String slug,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        Long userId = (jwt != null ? jwt.getClaim("userId") : null);
+
+        Long bookId = bookRepository.findIdBySlug(slug)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Book not found"));
+
+        long favoriteCount = favoriteRepository.countByBook_Id(bookId);
+        boolean likedByMe = userId != null && favoriteRepository.existsByUser_IdAndBook_Id(userId, bookId);
+
+        return Map.of("favoriteCount", favoriteCount, "likedByMe", likedByMe);
+    }
+
 
     @GetMapping("/books/catalog")
     public ResponseEntity<Page<ResBookListItemDTO>> filterBooks(
