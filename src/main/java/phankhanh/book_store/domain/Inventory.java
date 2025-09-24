@@ -22,4 +22,9 @@ public class Inventory {
 
     @Column(nullable = false)
     private Integer sold;  // đã bán (phục vụ hiển thị)
+
+    // implement optimistic locking
+    @Version
+    @Column(nullable = false)
+    private int version;
 }
