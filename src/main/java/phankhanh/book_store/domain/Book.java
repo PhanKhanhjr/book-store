@@ -112,6 +112,23 @@ public class Book {
     @Column(nullable = false)
     private boolean deleted = false;
 
-    @Column(nullable = false) private Integer ratingCount = 0;
-    @Column(nullable = false, precision = 3, scale = 2) private BigDecimal ratingAvg = BigDecimal.ZERO;
+    @Builder.Default
+    @Column(nullable = false)
+    private Integer ratingCount = 0;
+
+    @Builder.Default
+    @Column(nullable = false, precision = 3, scale = 2)
+    private BigDecimal ratingAvg = BigDecimal.ZERO;
+
+    @PrePersist
+    void prePersist() {
+        if (ratingCount == null) ratingCount = 0;
+        if (ratingAvg == null)   ratingAvg = BigDecimal.ZERO;
+    }
+
+    @PreUpdate
+    void preUpdate() {
+        if (ratingCount == null) ratingCount = 0;
+        if (ratingAvg == null)   ratingAvg = BigDecimal.ZERO;
+    }
 }

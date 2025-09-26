@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import phankhanh.book_store.DTO.response.ResPublisher;
-import phankhanh.book_store.DTO.response.RestResponse;
 import phankhanh.book_store.domain.Publisher;
 import phankhanh.book_store.repository.PublisherRepository;
 

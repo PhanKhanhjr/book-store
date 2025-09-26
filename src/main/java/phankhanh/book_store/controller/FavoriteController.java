@@ -27,7 +27,6 @@ public class FavoriteController {
         boolean liked = favoriteService.toggleFavorite(userId, bookId);
         return ResponseEntity.ok(Map.of("liked", liked));
     }
-
     @GetMapping("/me")
     public Page<ResBookFavoriteDTO> myFavorites(
             @AuthenticationPrincipal Jwt jwt,
